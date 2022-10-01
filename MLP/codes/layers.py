@@ -58,6 +58,7 @@ class Sigmoid(Layer):
         activatd_input = sigmoid(input)
         self._saved_for_backward(input)
         return activatd_input
+
         # TODO END
 
     def backward(self, grad_output):
@@ -68,6 +69,7 @@ class Sigmoid(Layer):
 
         grad_input = grad_output * diriviation_sigmoid(self._saved_tensor)
         return grad_input
+
         # TODO END
 
 class Gelu(Layer):
@@ -76,14 +78,30 @@ class Gelu(Layer):
 
     def forward(self, input):
         # TODO START
-        '''Your codes here'''
-        pass
+        def gelu(x):
+            return 0.5 * x * (1 + np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * np.power(x, 3))))
+
+        activatd_input = gelu(input)
+        self._saved_for_backward(input)
+        return activatd_input
+
         # TODO END
+
 
     def backward(self, grad_output):
         # TODO START
-        '''Your codes here'''
-        pass
+
+        #! references: https://alaaalatif.github.io/2019-04-11-gelu/
+        #* for the inplimentation of gelu's derviation, I asked for help from Zirui CHen.
+        #* I suspect that TAs wanna us to use delta = 1e(-5) to compute the derivatives, but I chossen to use a more accurate solution
+        def diriviation_gelu(x):
+            return 0.5 * (1 + np.tanh(np.sqrt(2 / np.pi) \
+                * (x + 0.044715 * np.power(x, 3)))) + 0.5 * x * np.sqrt(2 / np.pi) * \
+                    (1 - np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * np.power(x, 3))))\
+                        ** 2 * (1 + 3 * 0.044715 * np.power(x, 2))
+        grad_input = grad_output * diriviation_gelu(self._saved_tensor)
+        return grad_input
+
         # TODO END
 
 class Linear(Layer):
@@ -100,16 +118,24 @@ class Linear(Layer):
         self.diff_W = np.zeros((in_num, out_num))
         self.diff_b = np.zeros(out_num)
 
+        #! grad differ 分别是什么
+
     def forward(self, input):
         # TODO START
-        '''Your codes here'''
-        pass
+        expanded_input = np.expand_dims(input, axis=-2)
+        #! why expand_dims
+        forward = np.matmul(expanded_input, self.W).squeeze(-2) + self.b
+        return forward
         # TODO END
 
     def backward(self, grad_output):
         # TODO START
-        '''Your codes here'''
-        pass
+        #! TODO
+        expanded_input = np.expand_dims(self._saved_tensor, -1)
+        expanded_output = np.expand_dims(grad_output, -2)
+        self.grad_W = np.sum(expanded_input * expanded_output, axis=0)
+        self.grad_b = np.sum(grad_output, axis=0)
+        return np.matmul(self.W, np.expand_dims(grad_output, -1)).squeeze(-1)
         # TODO END
 
     def update(self, config):
