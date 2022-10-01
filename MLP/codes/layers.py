@@ -25,24 +25,26 @@ class Layer(object):
 
 class Relu(Layer):
     #! 什么是激活函数层，为什么要在此存下 _saved_for_backward，而且都是 input 而非激活后的 activation
+    # 注意在计算梯度时，需要存下当前层的 input（求导是计算当前输入下的导数），然而梯度是递乘的，从后一直传递向前，故而需要乘上 grad_output
     def __init__(self, name):
         super(Relu, self).__init__(name)
 
     def forward(self, input):
         # TODO START
         activatd_input = np.maximum(0, input)
+        #* 对于 Relu 而言，不能存下激活后的 activation，而是存下 input，否则在 backward 时，梯度会断掉
         self._saved_for_backward(input)
         return activatd_input
         # TODO END
 
     def backward(self, grad_output):
         # TODO START
-    #! 为什么需要根据 saved_for_backward 来决定梯度是否为 0
+    #* ReLU 导函数为 1 if x > 0 else 0
         if self._saved_tensor is None:
             raise ValueError('No saved tensor for backward')
         elif self._saved_tensor is not None:
-            grad_input = grad_output * (self._saved_tensor > 0)
-            return grad_input
+            grad_backword = grad_output * (self._saved_tensor > 0)
+            return grad_backword
         # TODO END
 
 class Sigmoid(Layer):
@@ -67,8 +69,8 @@ class Sigmoid(Layer):
         def diriviation_sigmoid(x):
             return np.exp(-x) / (1 + np.exp(-x)) ** 2
 
-        grad_input = grad_output * diriviation_sigmoid(self._saved_tensor)
-        return grad_input
+        grad_backword = grad_output * diriviation_sigmoid(self._saved_tensor)
+        return grad_backword
 
         # TODO END
 
@@ -99,8 +101,8 @@ class Gelu(Layer):
                 * (x + 0.044715 * np.power(x, 3)))) + 0.5 * x * np.sqrt(2 / np.pi) * \
                     (1 - np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * np.power(x, 3))))\
                         ** 2 * (1 + 3 * 0.044715 * np.power(x, 2))
-        grad_input = grad_output * diriviation_gelu(self._saved_tensor)
-        return grad_input
+        grad_backword = grad_output * diriviation_gelu(self._saved_tensor)
+        return grad_backword
 
         # TODO END
 
@@ -118,24 +120,25 @@ class Linear(Layer):
         self.diff_W = np.zeros((in_num, out_num))
         self.diff_b = np.zeros(out_num)
 
-        #! grad differ 分别是什么
+        #* grad 是一般意义上的梯度，而 diff 是在 Adam 当中利用的冲量
 
     def forward(self, input):
         # TODO START
-        expanded_input = np.expand_dims(input, axis=-2)
-        #! why expand_dims
-        forward = np.matmul(expanded_input, self.W).squeeze(-2) + self.b
+        #! ALERT
+        self._saved_for_backward(input)
+        forward = np.matmul(np.expand_dims(input, -2), self.W).squeeze(-2) + self.b
         return forward
         # TODO END
 
     def backward(self, grad_output):
         # TODO START
-        #! TODO
-        expanded_input = np.expand_dims(self._saved_tensor, -1)
-        expanded_output = np.expand_dims(grad_output, -2)
-        self.grad_W = np.sum(expanded_input * expanded_output, axis=0)
-        self.grad_b = np.sum(grad_output, axis=0)
-        return np.matmul(self.W, np.expand_dims(grad_output, -1)).squeeze(-1)
+        if self._saved_tensor is None:
+            raise ValueError('No saved tensor for backward')
+        else:
+            #! ALERT
+            self.grad_W = (np.expand_dims(grad_output, -2) * np.expand_dims(self._saved_tensor, -1)).sum(0)
+            self.grad_b = grad_output.sum(0)
+            return np.matmul(self.W, np.expand_dims(grad_output, -1)).squeeze(-1)
         # TODO END
 
     def update(self, config):

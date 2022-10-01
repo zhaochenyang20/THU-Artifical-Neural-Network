@@ -1,3 +1,4 @@
+from re import S
 from network import Network
 from utils import LOG_INFO
 from layers import Relu, Sigmoid, Linear, Gelu
@@ -11,8 +12,9 @@ train_data, test_data, train_label, test_label = load_mnist_2d('data')
 # Your model defintion here
 # You should explore different model architecture
 model = Network()
-model.add(Linear('fc1', 784, 10, 0.01))
-
+model.add(Linear('fc1', 784, 100, 0.01))
+model.add(Sigmoid("Sigmoid"))
+model.add(Linear('fc1', 100, 10, 0.01))
 loss = EuclideanLoss(name='loss')
 
 # Training configuration
@@ -22,15 +24,14 @@ loss = EuclideanLoss(name='loss')
 #       'disp_freq' denotes number of iterations in one epoch to display information.
 
 config = {
-    'learning_rate': 0.0,
-    'weight_decay': 0.0,
+    'learning_rate': 1e-2,
+    'weight_decay': 0,
     'momentum': 0.0,
     'batch_size': 100,
-    'max_epoch': 100,
+    'max_epoch': 50,
     'disp_freq': 50,
-    'test_epoch': 5
+    'test_epoch': 1
 }
-
 
 for epoch in range(config['max_epoch']):
     LOG_INFO('Training @ %d epoch...' % (epoch))
