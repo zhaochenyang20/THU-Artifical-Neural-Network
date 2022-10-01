@@ -74,41 +74,65 @@ class Sigmoid(Layer):
 
         # TODO END
 
+# class Gelu(Layer):
+#     def __init__(self, name):
+#         super(Gelu, self).__init__(name)
+
+#     def forward(self, input):
+#         # TODO START
+#         def gelu(x):
+#             return 0.5 * x * (1 + np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * np.power(x, 3))))
+
+#         activatd_input = gelu(input)
+#         self._saved_for_backward(input)
+#         return activatd_input
+
+#         # TODO END
+
+
+#     def backward(self, grad_output):
+#         # TODO START
+
+#         #! references: https://alaaalatif.github.io/2019-04-11-gelu/
+#         #* for the inplimentation of gelu's derviation, I asked for help from Zirui CHen.
+#         #* I suspect that TAs wanna us to use delta = 1e(-5) to compute the derivatives, but I chossen to use a more accurate solution
+#         def diriviation_gelu(x):
+#             return 0.5 * (1 + np.tanh(np.sqrt(2 / np.pi) \
+#                 * (x + 0.044715 * np.power(x, 3)))) + 0.5 * x * np.sqrt(2 / np.pi) * \
+#                     (1 - np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * np.power(x, 3))))\
+#                         ** 2 * (1 + 3 * 0.044715 * np.power(x, 2))
+
+#         def gelu(x):
+#             return 0.5 * x * (1 + np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * np.power(x, 3))))
+
+#         grad_backword = grad_output * (gelu(self._saved_tensor + 1e-6) - gelu(self._saved_tensor - 1e-6)) / 2e-6
+#         return grad_backword
+
+#         # TODO END
+
 class Gelu(Layer):
     def __init__(self, name):
         super(Gelu, self).__init__(name)
 
     def forward(self, input):
         # TODO START
-        def gelu(x):
-            return 0.5 * x * (1 + np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * np.power(x, 3))))
-
-        activatd_input = gelu(input)
-        self._saved_for_backward(input)
-        return activatd_input
-
+        self._saved_tensor = input
+        self._saved_PHI_tensor = 0.5 * (1 + np.tanh(np.sqrt(2.0/np.pi) * (input + 0.044715 * np.power(input, 3))))
+        return input * self._saved_PHI_tensor
         # TODO END
-
 
     def backward(self, grad_output):
         # TODO START
-
-        #! references: https://alaaalatif.github.io/2019-04-11-gelu/
-        #* for the inplimentation of gelu's derviation, I asked for help from Zirui CHen.
-        #* I suspect that TAs wanna us to use delta = 1e(-5) to compute the derivatives, but I chossen to use a more accurate solution
-        def diriviation_gelu(x):
-            return 0.5 * (1 + np.tanh(np.sqrt(2 / np.pi) \
-                * (x + 0.044715 * np.power(x, 3)))) + 0.5 * x * np.sqrt(2 / np.pi) * \
-                    (1 - np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * np.power(x, 3))))\
-                        ** 2 * (1 + 3 * 0.044715 * np.power(x, 2))
-        grad_backword = grad_output * diriviation_gelu(self._saved_tensor)
-        return grad_backword
-
+        return grad_output * (self._saved_PHI_tensor + self._saved_tensor * np.sqrt(0.5/np.pi) * np.exp(-0.5*np.square(self._saved_tensor)))
         # TODO END
 
 class Linear(Layer):
     def __init__(self, name, in_num, out_num, init_std):
         super(Linear, self).__init__(name, trainable=True)
+        #! TODO add readme
+        import numpy as np
+        np.random.seed(1)
+        #! add readme
         self.in_num = in_num
         self.out_num = out_num
         self.W = np.random.randn(in_num, out_num) * init_std
