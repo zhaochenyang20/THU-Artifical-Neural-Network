@@ -7,6 +7,7 @@ class Layer(object):
         self.trainable = trainable
         self._saved_tensor = None
 
+# ! acutally we won't use the base class Layer, so these function are not required
     def forward(self, input):
         pass
 
@@ -23,19 +24,25 @@ class Layer(object):
         self._saved_tensor = tensor
 
 class Relu(Layer):
+    #! 什么是激活函数层，为什么要在此存下 _saved_for_backward，而且都是 input 而非激活后的 activation
     def __init__(self, name):
         super(Relu, self).__init__(name)
 
     def forward(self, input):
         # TODO START
-        '''Your codes here'''
-        pass
+        activatd_input = np.maximum(0, input)
+        self._saved_for_backward(input)
+        return activatd_input
         # TODO END
 
     def backward(self, grad_output):
         # TODO START
-        '''Your codes here'''
-        pass
+    #! 为什么需要根据 saved_for_backward 来决定梯度是否为 0
+        if self._saved_tensor is None:
+            raise ValueError('No saved tensor for backward')
+        elif self._saved_tensor is not None:
+            grad_input = grad_output * (self._saved_tensor > 0)
+            return grad_input
         # TODO END
 
 class Sigmoid(Layer):
@@ -44,14 +51,23 @@ class Sigmoid(Layer):
 
     def forward(self, input):
         # TODO START
-        '''Your codes here'''
-        pass
+
+        def sigmoid(x):
+            return 1 / (1 + np.exp(-x))
+
+        activatd_input = sigmoid(input)
+        self._saved_for_backward(input)
+        return activatd_input
         # TODO END
 
     def backward(self, grad_output):
         # TODO START
-        '''Your codes here'''
-        pass
+
+        def diriviation_sigmoid(x):
+            return np.exp(-x) / (1 + np.exp(-x)) ** 2
+
+        grad_input = grad_output * diriviation_sigmoid(self._saved_tensor)
+        return grad_input
         # TODO END
 
 class Gelu(Layer):
@@ -63,7 +79,7 @@ class Gelu(Layer):
         '''Your codes here'''
         pass
         # TODO END
-    
+
     def backward(self, grad_output):
         # TODO START
         '''Your codes here'''
