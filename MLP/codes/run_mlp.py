@@ -35,7 +35,7 @@ loss = HingeLoss(name='loss')
 #       'disp_freq' denotes number of iterations in one epoch to display information.
 
 config = {
-    'learning_rate': 1e-2,
+    'learning_rate': 1e-1,
     'weight_decay': 0,
     'momentum': 0.0,
     'batch_size': 100,
@@ -43,7 +43,7 @@ config = {
     'disp_freq': 50,
     'test_epoch': 1
 }
-
+#! 双层 sigmoid，softmax 用 lr = 1，其他 0.1
 def parser_data():
     import argparse
     parser = argparse.ArgumentParser(prog='Pinyin Input Method', description='Pinyin to Chinese.', allow_abbrev=True)
@@ -107,12 +107,16 @@ def model_and_loss_generator(hidden_layers_num, activate_function, loss_function
     else:
         raise ValueError("Unknown loss function")
 
+    #! Add readme
+    if activate_function == 'Sigmoid' and loss_function=="SoftmaxCrossEntropyLoss":
+        config['learning_rate'] = 1
+
     return model, loss
 
 
 def main(model, loss, run_name):
-    # import wandb
-    # wandb.init(project="numpy_mlp", name="run_name")
+    import wandb
+    wandb.init(project="numpy_mlp", name=f"{run_name}")
     print(run_name)
 
     train_data, test_data, train_label, test_label = load_mnist_2d('data')

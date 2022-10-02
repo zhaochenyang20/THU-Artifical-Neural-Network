@@ -67,12 +67,13 @@ class Sigmoid(Layer):
         # TODO START
 
         def diriviation_sigmoid(x):
-            return np.exp(-x) / (1 + np.exp(-x)) ** 2
+            return np.exp(-x) / ((1 + np.exp(-x)) ** 2)
 
         grad_backword = grad_output * diriviation_sigmoid(self._saved_tensor)
         return grad_backword
 
         # TODO END
+
 
 class Gelu(Layer):
     def __init__(self, name):
