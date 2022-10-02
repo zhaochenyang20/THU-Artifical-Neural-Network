@@ -1,7 +1,7 @@
 from re import S
 from network import Network
 from utils import LOG_INFO
-from layers import Relu, Sigmoid, Linear, Gelu
+from layers import Gelu, Relu, Sigmoid, Linear
 from loss import EuclideanLoss, SoftmaxCrossEntropyLoss, HingeLoss
 from solve_net import train_net, test_net
 from load_data import load_mnist_2d
@@ -12,12 +12,11 @@ train_data, test_data, train_label, test_label = load_mnist_2d('data')
 # You should explore different model architecture
 model = Network()
 model.add(Linear('fc1', 784, 100, 0.01))
-model.add(Relu("Sigmoid"))
+model.add(Gelu("Sigmoid"))
 model.add(Linear('fc2', 100, 100, 0.01))
 model.add(Relu("test"))
 model.add(Linear('fc2', 100, 10, 0.01))
-loss = SoftmaxCrossEntropyLoss(name='loss')
-model
+loss = HingeLoss(name='loss')
 
 
 # Training configuration
