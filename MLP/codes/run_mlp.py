@@ -122,4 +122,5 @@ if __name__ == '__main__':
         run_name = str(hidden_layers_num)  + (("_" + str(activate_function)) if activate_function else "") + "_" + str(loss_function) + ("_" + appendix_name)
     else:
         run_name = str(hidden_layers_num)  + (("_" + str(activate_function)) if activate_function else "") + "_" + str(loss_function)
-    main(model, loss, run_name)
+    print(run_name)
+    # main(model, loss, run_name)
