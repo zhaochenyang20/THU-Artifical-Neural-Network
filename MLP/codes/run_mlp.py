@@ -1,8 +1,3 @@
-from cmath import e
-from re import M, S
-from pyautogui import run
-
-from sympy import E, Ge, re
 from network import Network
 from utils import LOG_INFO
 from layers import Gelu, Relu, Sigmoid, Linear
@@ -10,54 +5,50 @@ from loss import EuclideanLoss, SoftmaxCrossEntropyLoss, HingeLoss
 from solve_net import train_net, test_net
 from load_data import load_mnist_2d
 
-
-# Your model defintion here
-# You should explore different model architecture
-# model = Network()
-# model.add(Linear('fc1', 784, 100, 0.01))
-# model.add(Gelu("Sigmoid"))
-# model.add(Linear('fc2', 100, 100, 0.01))
-# model.add(Relu("test"))
-# model.add(Linear('fc2', 100, 10, 0.01))
-# loss = HingeLoss(name='loss')
-
-
-
-model = Network()
-model.add(Linear('fc1', 784, 10, 0.01))
-model.add(Gelu("Sigmoid"))
-loss = HingeLoss(name='loss')
-
-# Training configuration
-# You should adjust these hyperparameters
-# NOTE: one iteration means model forward-backwards one batch of samples.
-#       one epoch means model has gone through all the training samples.
-#       'disp_freq' denotes number of iterations in one epoch to display information.
-
 config = {
-    'learning_rate': 1e-1,
+    'learning_rate': 1e-2,
     'weight_decay': 0,
     'momentum': 0.0,
-    'batch_size': 100,
+    'batch_size': 10,
     'max_epoch': 50,
     'disp_freq': 50,
     'test_epoch': 1
 }
+
 #! 双层 sigmoid，softmax 用 lr = 1，其他 0.1
 def parser_data():
     import argparse
-    parser = argparse.ArgumentParser(prog='Pinyin Input Method', description='Pinyin to Chinese.', allow_abbrev=True)
+    parser = argparse.ArgumentParser(prog='Basic experiments', description='Basic experiment in MLP', allow_abbrev=True)
 
     parser.add_argument('-n', '--hidden_layers_num', dest='hidden_layers_num', type=int, default=None, required=True, help='The number of hidden layers in the model.')
     parser.add_argument('-a', '--activate_function', dest='activate_function', type=str, default=None, required=False, help="the activation function to be used")
     parser.add_argument('-l', '--loss_function', dest='loss_function', type=str, default=None, required=True, help="the loss function to be used")
+    parser.add_argument(
+        "--t",
+        action="store_true",
+        dest="tune",
+        help="use to massive tune experiments",
+    )
+    parser.add_argument('-lr', '--learning_rate', dest='learning_rate', type=float, default=config['learning_rate'], help='the learning rate')
+    parser.add_argument('-w', '--weight_decay', dest='weight_decay', type=float, default=config['weight_decay'], required=False, help='the weight decay')
+    parser.add_argument('-b', '--batch_size', dest='batch_size', type=int, default=config['batch_size'], required=False, help='the batch size')
 
     args = parser.parse_args()
     hidden_layers_num = args.hidden_layers_num
     activate_function = args.activate_function
     loss_function = args.loss_function
 
-    return (hidden_layers_num, activate_function, loss_function)
+    config['learning_rate'] = args.learning_rate
+    config['weight_decay'] = args.weight_decay
+    config['batch_size'] = args.batch_size
+
+    tune = args.tune
+    if tune:
+        appendix_name = str(config["learning_rate"]) + "_" + str(config["weight_decay"]) + "_" + str(config["batch_size"])
+    else:
+        appendix_name = None
+
+    return (hidden_layers_num, activate_function, loss_function, appendix_name)
 
 def model_and_loss_generator(hidden_layers_num, activate_function, loss_function):
     model = Network()
@@ -106,11 +97,6 @@ def model_and_loss_generator(hidden_layers_num, activate_function, loss_function
         loss = EuclideanLoss(name='loss')
     else:
         raise ValueError("Unknown loss function")
-
-    #! Add readme
-    if activate_function == 'Sigmoid' and loss_function=="SoftmaxCrossEntropyLoss":
-        config['learning_rate'] = 1
-
     return model, loss
 
 
@@ -130,7 +116,10 @@ def main(model, loss, run_name):
             test_net(model, loss, test_data, test_label, config['batch_size'])
 
 if __name__ == '__main__':
-    hidden_layers_num, activate_function, loss_function = parser_data()
+    hidden_layers_num, activate_function, loss_function, appendix_name = parser_data()
     model, loss = model_and_loss_generator(hidden_layers_num, activate_function, loss_function)
-    run_name = str(hidden_layers_num)  + (("_" + str(activate_function)) if activate_function else "") + "_" + str(loss_function)
+    if appendix_name != None:
+        run_name = str(hidden_layers_num)  + (("_" + str(activate_function)) if activate_function else "") + "_" + str(loss_function) + ("_" + appendix_name)
+    else:
+        run_name = str(hidden_layers_num)  + (("_" + str(activate_function)) if activate_function else "") + "_" + str(loss_function)
     main(model, loss, run_name)

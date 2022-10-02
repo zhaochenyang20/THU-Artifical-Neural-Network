@@ -39,9 +39,7 @@ modified to meet personal needs.
 
 ## Bonus
 
-1. Conduct experiments on a neural network with two hidden layers. Compare the difference of
-
-results between one-layer structure and two-layer structure.
+1. Conduct experiments on a neural network with two hidden layers. Compare the difference of results between one-layer structure and two-layer structure.
 
 2. Tune the hyper-parameters such as the learning rate, the batch size, etc. Analyze how hyper
 
@@ -144,3 +142,66 @@ loss = HingeLoss(name='loss')
 1. 比较单双层结果。
 2. 阐释超参数的影响。
 3. 计算稳定性。
+
+- 比较学习率
+
+```python
+python3 run_mlp.py -n 2 -a Sigmoid -l SoftmaxCrossEntropyLoss
+
+config = {
+    'learning_rate': 1,
+    'weight_decay': 0,
+    'momentum': 0.0,
+    'batch_size': 100,
+    'max_epoch': 50,
+    'disp_freq': 50,
+    'test_epoch': 1
+}
+
+python3 run_mlp.py -n 1 -a Sigmoid -l EuclideanLoss
+
+config = {
+    'learning_rate': 1e-2,
+    'weight_decay': 0,
+    'momentum': 0.0,
+    'batch_size': 100,
+    'max_epoch': 50,
+    'disp_freq': 50,
+    'test_epoch': 1
+}
+```
+
+- 可以用来比较 `weight_decay`
+
+```python
+python3 run_mlp.py -n 2 -a Sigmoid -l SoftmaxCrossEntropyLoss
+config = {
+    'learning_rate': 1,
+    'weight_decay': 1e-5,
+    'momentum': 0.0,
+    'batch_size': 100,
+    'max_epoch': 50,
+    'disp_freq': 50,
+    'test_epoch': 1
+}
+
+python3 run_mlp.py -n 2 -a Gelu -l HingeLoss
+config = {
+    'learning_rate': 1e-2,
+    'weight_decay': 1e-1,
+    'momentum': 0.0,
+    'batch_size': 100,
+    'max_epoch': 50,
+    'disp_freq': 50,
+    'test_epoch': 1
+}
+```
+
+
+- 批量大小
+
+```python
+python3 run_mlp.py -n 2 -a Sigmoid -l SoftmaxCrossEntropyLoss
+python3 run_mlp.py -n 1 -a Sigmoid -l EuclideanLoss
+```
+
