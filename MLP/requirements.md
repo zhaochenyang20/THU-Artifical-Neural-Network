@@ -39,9 +39,7 @@ modified to meet personal needs.
 
 ## Bonus
 
-1. Conduct experiments on a neural network with two hidden layers. Compare the difference of
-
-results between one-layer structure and two-layer structure.
+1. Conduct experiments on a neural network with two hidden layers. Compare the difference of results between one-layer structure and two-layer structure.
 
 2. Tune the hyper-parameters such as the learning rate, the batch size, etc. Analyze how hyper
 
@@ -63,5 +61,147 @@ loss functions.
    be something wrong with your code. Nevertheless, TAs will still go through your code for any
    possible bugs even if you reach the requirement.
 
+# 实验设计
 
+## 实验接口
+
+### 基础实验
+
+基础实验配置如下：
+
+```python
+config = {
+    'learning_rate': 1e-2,
+    'weight_decay': 0,
+    'momentum': 0.0,
+    'batch_size': 100,
+    'max_epoch': 50,
+    'disp_freq': 50,
+    'test_epoch': 1
+}
+```
+
+基础实验接口不用太复杂，就三个函数，也即零层，单层和双层。固定线性层维度接口，也即：
+
+1. 双层维度
+
+```python
+model = Network()
+model.add(Linear('fc1', 784, 100, 0.01))
+model.add(Gelu("Sigmoid"))
+model.add(Linear('fc2', 100, 100, 0.01))
+model.add(Relu("test"))
+model.add(Linear('fc2', 100, 10, 0.01))
+loss = HingeLoss(name='loss')
+```
+
+2. 单层维度
+
+```python
+model = Network()
+model.add(Linear('fc1', 784, 100, 0.01))
+model.add(Gelu("Sigmoid"))
+model.add(Linear('fc2', 100, 10, 0.01))
+loss = HingeLoss(name='loss')
+```
+
+3. 零层维度
+
+```python
+model = Network()
+model.add(Linear('fc1', 784, 10, 0.01))
+loss = HingeLoss(name='loss')
+```
+
+注意，零隐藏层不用带激活函数了。
+
+### 大规模对比实验
+
+预计需要调的参数有 `lr`，`wd`，`bs`，由于收敛很快，也没有过拟合，故而控制 `epoch` 为 50 即可。
+
+`lr` 和 `wd` 需要做大规模对比实验，具体的参数待定。
+
+## 实验目标
+
+训练时间，收敛速率，最终效果。
+
+## 零隐藏层实验
+
+用三个损失函数分别跑，并且用 wandb 作图。
+
+## 单隐藏层
+
+三个激活函数固定用 `EuclideanLoss` 跑对比；三个损失函数固定用 `Relu` 跑对比。
+
+## 双隐藏层
+
+基础实验同单隐藏层。
+
+## 扩展实验
+
+1. 比较单双层结果。
+2. 阐释超参数的影响。
+3. 计算稳定性。
+
+- 比较学习率
+
+```python
+python3 run_mlp.py -n 2 -a Sigmoid -l SoftmaxCrossEntropyLoss
+
+config = {
+    'learning_rate': 1,
+    'weight_decay': 0,
+    'momentum': 0.0,
+    'batch_size': 100,
+    'max_epoch': 50,
+    'disp_freq': 50,
+    'test_epoch': 1
+}
+
+python3 run_mlp.py -n 1 -a Sigmoid -l EuclideanLoss
+
+config = {
+    'learning_rate': 1e-2,
+    'weight_decay': 0,
+    'momentum': 0.0,
+    'batch_size': 100,
+    'max_epoch': 50,
+    'disp_freq': 50,
+    'test_epoch': 1
+}
+```
+
+- 可以用来比较 `weight_decay`
+
+```python
+python3 run_mlp.py -n 2 -a Sigmoid -l SoftmaxCrossEntropyLoss
+config = {
+    'learning_rate': 1,
+    'weight_decay': 1e-5,
+    'momentum': 0.0,
+    'batch_size': 100,
+    'max_epoch': 50,
+    'disp_freq': 50,
+    'test_epoch': 1
+}
+
+python3 run_mlp.py -n 2 -a Gelu -l HingeLoss
+config = {
+    'learning_rate': 1e-2,
+    'weight_decay': 1e-1,
+    'momentum': 0.0,
+    'batch_size': 100,
+    'max_epoch': 50,
+    'disp_freq': 50,
+    'test_epoch': 1
+}
+```
+
+
+- 批量大小
+
+```python
+python3 run_mlp.py -n 2 -a Sigmoid -l SoftmaxCrossEntropyLoss
+python3 run_mlp.py -n 1 -a Sigmoid -l EuclideanLoss
+```
 
