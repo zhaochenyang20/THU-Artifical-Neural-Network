@@ -102,7 +102,7 @@ def model_and_loss_generator(hidden_layers_num, activate_function, loss_function
 
 def main(model, loss, run_name):
     import wandb
-    wandb.init(project="numpy_mlp", name=f"{run_name}")
+    wandb.init(project="Test New Code", name=f"{run_name}")
     print(run_name)
 
     train_data, test_data, train_label, test_label = load_mnist_2d('data')
@@ -123,4 +123,4 @@ if __name__ == '__main__':
     else:
         run_name = str(hidden_layers_num)  + (("_" + str(activate_function)) if activate_function else "") + "_" + str(loss_function)
     print(run_name)
-    # main(model, loss, run_name)
+    main(model, loss, run_name)
