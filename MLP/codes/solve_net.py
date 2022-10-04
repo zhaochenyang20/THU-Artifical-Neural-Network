@@ -42,7 +42,7 @@ def train_net(model, loss, config, inputs, labels, batch_size, disp_freq):
         if iter_counter % disp_freq == 0:
             msg = '  Training iter %d, batch loss %.4f, batch acc %.4f' % (iter_counter, np.mean(loss_list), np.mean(acc_list))
             #! TODO add readme
-            wandb.log({'train_accuracy': np.mean(acc_list), 'train_loss': np.mean(loss_list)})
+            # wandb.log({'train_accuracy': np.mean(acc_list), 'train_loss': np.mean(loss_list)})
             loss_list = []
             acc_list = []
             LOG_INFO(msg)
@@ -63,4 +63,4 @@ def test_net(model, loss, inputs, labels, batch_size):
     msg = '    Testing, total mean loss %.5f, total acc %.5f' % (np.mean(loss_list), np.mean(acc_list))
     LOG_INFO(msg)
     #! TODO add readme
-    wandb.log({'test_accuracy': np.mean(acc_list), 'test_loss': np.mean(loss_list)})
+    # wandb.log({'test_accuracy': np.mean(acc_list), 'test_loss': np.mean(loss_list)})

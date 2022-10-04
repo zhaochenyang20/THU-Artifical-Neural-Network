@@ -102,7 +102,7 @@ def model_and_loss_generator(hidden_layers_num, activate_function, loss_function
 
 def main(model, loss, run_name):
     import wandb
-    wandb.init(project="Test New Code", name=f"{run_name}")
+    # wandb.init(project="Test New Code", name=f"{run_name}")
     print(run_name)
 
     train_data, test_data, train_label, test_label = load_mnist_2d('data')

@@ -1,6 +1,4 @@
 import numpy as np
-from sympy import re
-
 
 class Layer(object):
     def __init__(self, name, trainable=False):
@@ -97,8 +95,8 @@ class Gelu(Layer):
 
     def backward(self, grad_output):
         # TODO START
-        #! references: https://alaaalatif.github.io/2019-04-11-gelu/
-        #! references: for the inplimentation of gelu's derviation, I asked for help from Zhiyuan Zeng, StudentID 2020010864
+        # Refference: https://alaaalatif.github.io/2019-04-11-gelu/
+        # Refference: for the inplimentation of gelu's derviation, I asked for help from Zhiyuan Zeng, StudentID 2020010864
         #* I suspect that TAs wanna us to use delta = 1e(-5) to compute the derivatives
 
         def diriviation_gelu(x):

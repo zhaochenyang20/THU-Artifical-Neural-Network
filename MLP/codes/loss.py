@@ -33,7 +33,7 @@ class SoftmaxCrossEntropyLoss(object):
 
     def forward(self, input, target):
         # TODO START
-        #! reference: https://ml-cheatsheet.readthedocs.io/en/latest/loss_functions.html
+        # Refference: https://ml-cheatsheet.readthedocs.io/en/latest/loss_functions.html
         #* 计算 softmax 前先减去最后一维的最大值
         input_shift = input - input.max(axis=-1, keepdims=True)
         exp_input = np.exp(input_shift)
@@ -68,8 +68,8 @@ class HingeLoss(object):
 
     def forward(self, input, target):
         # TODO START
-        #! Refference: https://www.zhihu.com/question/47746939 &
-        #! https://programmathically.com/understanding-hinge-loss-and-the-svm-cost-function/
+        # Refference: https://www.zhihu.com/question/47746939
+        # Refference: https://programmathically.com/understanding-hinge-loss-and-the-svm-cost-function/
         #* 参考助教给的文档，此处 margin 就是 delta，默认为 5
         #! TODO
         # np.maxium 和 np.max 的区别？
