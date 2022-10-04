@@ -32,6 +32,8 @@
 \begin{document}
 \maketitle
 
+\tableofcontents
+
 \section{基本实验}
 \subsection{参数设定}
 基础实验部分采用的超参数如下所示，注意到部分网络架构在该超参数设定下可能无法成功训练。
@@ -129,11 +131,11 @@
 	\label{fig:3}
 \end{figure}
 
-\subsubsection{不同损失函数函数对比}
+\subsubsection{不同损失函数对比}
 
 在单隐藏层的前提下，固定激活函数为 Sigmoid，遍历三种损失函数，结果如图 \ref{fig:4} 所示。\\
 分析结果可以发现，（1）就准确率而言，在测试集和训练集上均是 Hinge 效果最好而 Euclidean 效果最差；（2）就损失值而言，Hinge、SoftmaxCrossEntropy 和 Euclidean 计算出的绝对值存在着明显的差异，损失值无法横向比较，然而对比损失值下降速度，能够观察到 Hinge 收敛效果与收敛速度最为显著；（3）就收敛速度而言，Hinge 收敛曲线斜率最高，收敛最快，而 Euclidean 收敛最慢；（4）就训练时间而言，Hinge 耗时为 
-10m 49s，Euclidean 耗时为 10m 45s，SoftmaxCrossEntropy 耗时也为 10m 45s，三者并无显著差异。
+29s，Euclidean 耗时也为 29s，SoftmaxCrossEntropy 耗时为 31s，三者并无显著差异。
 
 \begin{figure}[htbp]
 	\centering
@@ -156,12 +158,24 @@
 		\centering
 		\includegraphics[width=1\textwidth]{../pics/单层损失函数train_acc.png}
 		\caption{单隐藏层遍历损失函数对比 train accuracy}
+		\label{fig:4d}
 	\end{subfigure}
 	\caption{单隐藏层遍历损失函数}
 	\label{fig:4}
 \end{figure}
 
-比较 Hinge、SoftmaxCrossEntropy 和 Euclidean 的函数形式可见，Hinge 损失函数的计算形式最为复杂，效果出人意料更好。然而之前接触过的分类任务更多使用 SoftmaxCrossEntropy。没有选择使用 Hinge 的原因可能是 Hinge 还还存在超参数 Margin 的缘故。对于 Margin 参数的 tune 也能作为实验目标。
+比较 Hinge、SoftmaxCrossEntropy 和 Euclidean 的函数形式可见，Hinge 损失函数的计算形式最为复杂，效果出人意料更好。然而之前接触过的分类任务更多使用 SoftmaxCrossEntropy。没有选择使用 Hinge 的原因可能是 Hinge 还还存在超参数 Margin 的缘故；对于 Margin 参数的 tune 也能作为实验目标。\\
+具体对比三个损失函数，做分析如下：
+
+\begin{enumerate}
+ 	\item Softmax 的图像近似与经过平滑处理后的 Hinge，故而能够推断二者的训练效果相当。
+ 	\item Euclidean 的结果相比 Softmax 较差，这可以从训练目标角度进行理解。Euclidean 的训练目标是希望线性层输出的结果尽可能接近真实值，也即在一个 $\Re^n$ 空间上的输出结果尽可能接近一个 one-hot 向量；而 Softmax
+ 	的目标是线性层输出的结果映射到概率分布空间上尽可能接近真实值，也即在一个 $\Re^n$ 空间上的输出结果映射到一个概率分布空间后尽可能接近一个 one-hot 向量，考虑到概率分布空间本就是一个各维度之和为 1 的 $\Re^n$ 子空间，这与 one-hot 分布的空间是完全相同的。
+	故而 Softmax 损失函数的训练目标更为优化，能够理解更好的训练效果。举例而言，如果线性层最后输出向量 $(0, 0, 0, 100)^T$，而期望的 one-hot 向量是 $(0, 0, 0, 1)^T$。对于 Euclidean 而言，这个输出结果非常糟糕，
+	损失值大，模型会惩罚当前的参数，使得输出结果的最后一项降低直至接近 $(0, 0, 0, 1)^T$；然而，对于 Softmax 而言，这个输出结果非常好，经过 Softmax 后，线性层的输出向量高度接近 $(0, 0, 0, 1)^T$，这一损失值很小，
+	模型会倾向于奖励当前的参数。
+	\item Euclidean 虽然训练目标和 one-hot 分类并不相近，最终会遏制模型的表达能力，然而 Euclidean 在训练初始时的损失值较大，收敛速率相对更高，这能够在图 \ref{fig:4d} 从 Euclidean 和 Softmax 的训练集正确率曲线梯度的对比中可以看出。
+\end{enumerate}
 
 
 \subsubsection{不同激活函数对比}
@@ -194,7 +208,7 @@
 	\label{fig:5}
 \end{figure}
 
-分析结果可以发现，（1）就准确率而言，ReLU 结果略微高于 GeLU，而 Sigmoid 的表现与二者有一定差距；（2）就损失值而言，ReLU 损失值略微低于 GeLU，而 Sigmoid 损失值显著大于前两者，且损失值衰减速率基本与准确率的上升速率符合；（3）就收敛速度而言，ReLU 与 Gelu 收敛速度相当，而 Sigmoid 收敛最慢，且收敛值最低；（4）就训练时间而言，Sigmoid 耗时为 10m 45s，Relu 为 10m 33s，Gelu 为 11m 14s，考虑到 Relu 最为简单的函数形式，具有最快的训练速度符合预期。而 Gelu 的实现方式基于微分的极限定义，计算复杂度最高，也符合预期。
+分析结果可以发现，（1）就准确率而言，ReLU 结果略微高于 GeLU，而 Sigmoid 的表现与二者有一定差距；（2）就损失值而言，ReLU 损失值略微低于 GeLU，而 Sigmoid 损失值显著大于前两者，且损失值衰减速率基本与准确率的上升速率符合；（3）就收敛速度而言，ReLU 与 Gelu 收敛速度相当，而 Sigmoid 收敛最慢，且收敛值最低；（4）就训练时间而言，Sigmoid 耗时为 29s，Relu 为 22s，Gelu 为 47s，考虑到 Relu 最为简单的函数形式，具有最快的训练速度符合预期。而 Gelu 的实现方式基于微分的极限定义，计算复杂度最高，也符合预期。
 
 对比图 \ref{fig:5}，考虑到三者的函数定义。
 \begin{itemize}
@@ -212,7 +226,9 @@ Sigmoid 和 GeLU 光滑且连续可微的函数；而 GeLU 被誉为平滑的 Re
 \subsection{双隐藏层实验}
 
 增加双层隐藏层，隐藏层神经元数分别设置为 100 和 100，遍历不同损失函数和激活函数进行实验，得到的训练过程和训练结果分别如图 ~\ref{fig:6} 所示。相比同样单隐藏层训练结果，双隐藏层的网络在测试集、训练集上的表现并未比单隐藏层存在显著优势，甚至在许多模型设定下表现不如单隐藏层。出于常识，双隐藏层网络比单隐藏层网络拥有更多的参数，似乎该具有更强的学习能力。\\
-然而，这个结论并不必然。一方面，小模型并不意味着更弱的表现能力，知识蒸馏领域的研究者便希望能够用更小的模型达到更好的效果；另一方面，在这次实验中，双层的参数复杂度上升，需要的训练资源和训练技巧相应更多，然而实验过程并没有为模型添加 dropout 层，也没有参考 RNN 的实现而为双层模型使用 residual connection。另外，实验没有尝试调整 momentum 参数，而将其固定为 0.0，这等效于使用了最为原始的 SGD 优化器，进一步致使模型难以体现出增加隐藏层带来的表达力优势。最后，考虑到十分类任务本身已经足够简单，即便是最简单的单隐藏层 MLP 也有了几乎完全正确的结果，可见单层模型的表达能力已经足够强大；双层模型并不能在模型表达力上有大幅突破，反而因为训练难度、模型复杂度和对训练技巧的更高需求丧失了潜在的优势。\\
+然而，这个结论并不必然。一方面，小模型并不意味着更弱的表现能力，知识蒸馏领域的研究者便希望能够用更小的模型达到更好的效果；另一方面，在这次实验中，双层的参数复杂度上升，需要的训练资源和训练技巧相应更多，
+然而实验过程并没有为模型添加 dropout 层与 batch norm 层，也没有参考 RNN 的实现而为双层模型使用 residual connection。另外，实验没有尝试调整 momentum 参数，而将其固定为 0.0，这等效于使用了最为原始的 SGD 优化器，进一步致使模型难以体现出增加隐藏层带来的表达力优势。最后，考虑到十分类任务本身已经足够简单，即便是最简单的单隐藏层 MLP 也有了几乎完全正确的结果，可见单层模型的表达能力已经足够强大；
+双层模型并不能在模型表达力上有大幅突破，反而因为训练难度、模型复杂度和对训练技巧的更高需求丧失了潜在的优势。\\
 综上所述，双隐藏层的结果不如单隐藏层，能够得到充分的理解。
 \begin{figure}[htbp]
 	\centering
@@ -242,7 +258,9 @@ Sigmoid 和 GeLU 光滑且连续可微的函数；而 GeLU 被誉为平滑的 Re
 
 此外，注意到实际上双隐藏层时，某些模型设定并不能成功训练。考虑到训练失败的设定是 2\_Sigmoid\_SoftmaxCrossEntropy 和 2\_Sigmoid\_Euclidean，而 2\_Sigmoid\_Hinge 成功训练。\\
 叠加双层的 Sigmoid 作为激活函数，可能会存在非常严重的梯度消失问题，而只有表达力更强的 Hinge 能够得到训练，这也符合预期。\\
-当然，这里所指的不能成功训练是基于基础实验的超参数设计而言的，实际上将学习率从 1e-2 提高到 1 即可让 2\_Sigmoid\_SoftmaxCrossEntropy 成功训练；这也符合预期，因为提高学习率也是对抗梯度衰减的一大方法。基于此，扩展实验中对学习率的调节便是基于 2\_Sigmoid\_SoftmaxCrossEntropy 而展开。而 2\_Sigmoid\_Euclidean 设定即是调整了学习率，依然难以训练成功。据此推断，没有使用 residual connection、dropout 且没有调整 momentum 的情况下，层数越多 Sigmoid 导致的梯度消失问题越严重，劣势将进一步被放大。
+当然，这里所指的不能成功训练是基于基础实验的超参数设计而言的，实际上将学习率从 1e-2 提高到 1 即可让 2\_Sigmoid\_SoftmaxCrossEntropy 成功训练；这也符合预期，因为提高学习率也是对抗梯度衰减的一大方法。
+基于此，扩展实验中对学习率的调节便是基于 2\_Sigmoid\_SoftmaxCrossEntropy 而展开。而 2\_Sigmoid\_Euclidean 设定即是调整了学习率，依然难以训练成功。
+据此推断，没有使用 residual connection、dropout、batch norm 且没有调整 momentum 的情况下，层数越多 Sigmoid 导致的梯度消失问题越严重，劣势将进一步被放大。
 
 \section{扩展实验}
 
@@ -451,6 +469,6 @@ Sigmoid 和 GeLU 光滑且连续可微的函数；而 GeLU 被誉为平滑的 Re
 一般而言，batch size 越大，批次越少，训练时间会更快一点，但可能造成数据的大量浪费；而 batch size 越小，对数据的利用越充分，浪费的数据量越少，但批次较大，训练会更耗时。
 如两图所示，batch size 更大时，能够考虑到更全局的信息，训练过程更加稳定，学习效果的波动更小；而较小的 batch size 梯度更新的频率更高，更容易引入样本噪声，训练效果相应波动性更大。不过，
 较小的 batch size 引入样本噪声并不一定绝对有害，实际上在 Gau-GAN 的训练过程中，小的 batch size 提升了生成器的泛化效果。\\
-最后参考 batch size 对于训练时间的影响。2\_Sigmoid\_SoftmaxCrossEntropyLoss\_1.0\_0.0\_200 用时 8m 42s，而 2\_Sigmoid\_SoftmaxCrossEntropyLoss\_1.0\_0.0\_10 用时 10m 24s；
-1\_Sigmoid\_EuclideanLoss\_0.01\_0.0\_10 用时 8m 0s，而 1\_Sigmoid\_EuclideanLoss\_0.01\_0.0\_200 用时 7m 35s，符合之前的预期。
+最后参考 batch size 对于训练时间的影响。2\_Sigmoid\_SoftmaxCrossEntropyLoss\_1.0\_0.0\_200 用时 40s，而 2\_Sigmoid\_SoftmaxCrossEntropyLoss\_1.0\_0.0\_10 用时 3m 11s；
+1\_Sigmoid\_EuclideanLoss\_0.01\_0.0\_10 用时 2m 14s，而 1\_Sigmoid\_EuclideanLoss\_0.01\_0.0\_200 用时 29s，符合之前的预期。
 \end{document}
