@@ -1,4 +1,5 @@
 import numpy as np
+from sympy import re
 
 
 class Layer(object):
@@ -7,7 +8,7 @@ class Layer(object):
         self.trainable = trainable
         self._saved_tensor = None
 
-# ! acutally we won't use the base class Layer, so these function are not required
+    # ! acutally we won't use the base class Layer, so these function are not required
     def forward(self, input):
         pass
 
@@ -32,18 +33,23 @@ class Relu(Layer):
     def forward(self, input):
         # TODO START
         activatd_input = np.maximum(0, input)
-        #* 对于 Relu 而言，不能存下激活后的 activation，而是存下 input，否则在 backward 时，梯度会断掉
+        # 对于 Relu 而言，不能存下激活后的 activation，而是存下 input，否则在 backward 时，梯度会断掉
         self._saved_for_backward(input)
         return activatd_input
         # TODO END
 
     def backward(self, grad_output):
         # TODO START
-    #* ReLU 导函数为 1 if x > 0 else 0
+        #* ReLU 导函数为 1 if x > 0 else 0
         if self._saved_tensor is None:
             raise ValueError('No saved tensor for backward')
         elif self._saved_tensor is not None:
+
+            def diriviation_Relu(x):
+                return 1 if x > 0 else 0
+
             grad_backword = grad_output * (self._saved_tensor > 0)
+
             return grad_backword
         # TODO END
 
@@ -87,27 +93,28 @@ class Gelu(Layer):
         activatd_input = gelu(input)
         self._saved_for_backward(input)
         return activatd_input
-
         # TODO END
 
     def backward(self, grad_output):
         # TODO START
-
         #! references: https://alaaalatif.github.io/2019-04-11-gelu/
-        #* for the inplimentation of gelu's derviation, I asked for help from Zirui CHen.
-        #* I suspect that TAs wanna us to use delta = 1e(-5) to compute the derivatives, but I chossen to use a more accurate solution
+        #! references: for the inplimentation of gelu's derviation, I asked for help from Zhiyuan Zeng, StudentID 2020010864
+        #* I suspect that TAs wanna us to use delta = 1e(-5) to compute the derivatives
+
         def diriviation_gelu(x):
             return 0.5 * (1 + np.tanh(np.sqrt(2 / np.pi) \
                 * (x + 0.044715 * np.power(x, 3)))) + 0.5 * x * np.sqrt(2 / np.pi) * \
                     (1 - np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * np.power(x, 3))))\
                         ** 2 * (1 + 3 * 0.044715 * np.power(x, 2))
 
-        def gelu(x):
-            return 0.5 * x * (1 + np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * np.power(x, 3))))
+        def apropriate_derivative_gelu(x):
+            def gelu(x):
+                return 0.5 * x * (1 + np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * np.power(x, 3))))
+            delta = 1e-6
+            return (gelu(x + delta) - gelu(x - delta)) / (2 * delta)
 
-        grad_backword = grad_output * (gelu(self._saved_tensor + 1e-6) - gelu(self._saved_tensor - 1e-6)) / 2e-6
+        grad_backword = grad_output * apropriate_derivative_gelu(self._saved_tensor)
         return grad_backword
-
         # TODO END
 
 class Linear(Layer):
@@ -132,9 +139,9 @@ class Linear(Layer):
 
     def forward(self, input):
         # TODO START
-        #! ALERT
         self._saved_for_backward(input)
-        forward = np.matmul(np.expand_dims(input, -2), self.W).squeeze(-2) + self.b
+        matmul_result = np.matmul(input, self.W)
+        forward = matmul_result + self.b
         return forward
         # TODO END
 
@@ -143,10 +150,10 @@ class Linear(Layer):
         if self._saved_tensor is None:
             raise ValueError('No saved tensor for backward')
         else:
-            #! ALERT
-            self.grad_W = (np.expand_dims(grad_output, -2) * np.expand_dims(self._saved_tensor, -1)).sum(0)
+            self.grad_W = np.matmul(self._saved_tensor.T, grad_output)
             self.grad_b = grad_output.sum(0)
-            return np.matmul(self.W, np.expand_dims(grad_output, -1)).squeeze(-1)
+            backward = np.matmul(grad_output, self.W.T)
+            return backward
         # TODO END
 
     def update(self, config):
