@@ -1,0 +1,349 @@
+########################
+# Additional Files
+########################
+# test_gpu_colab.ipynb
+# wandb
+# pipeline.py
+# __pycache__
+# run_megstudio.ipynb
+# run_colab.ipynb
+# test_gpu_megstudio.ipynb
+# data
+
+########################
+# Filled Code
+########################
+# ../codes/layers.py:1
+        activatd_input = np.maximum(0, input)
+        # 对于 Relu 而言，不能存下激活后的 activation，而是存下 input，否则在 backward 时，梯度会断掉
+        self._saved_for_backward(input)
+        return activatd_input
+
+# ../codes/layers.py:2
+        #* ReLU 导函数为 1 if x > 0 else 0
+        if self._saved_tensor is None:
+            raise ValueError('No saved tensor for backward')
+        elif self._saved_tensor is not None:
+
+            def diriviation_Relu(x):
+                return 1 if x > 0 else 0
+
+            grad_backword = grad_output * (self._saved_tensor > 0)
+
+            return grad_backword
+
+# ../codes/layers.py:3
+
+        def sigmoid(x):
+            return 1 / (1 + np.exp(-x))
+
+        activatd_input = sigmoid(input)
+        self._saved_for_backward(input)
+        return activatd_input
+
+
+# ../codes/layers.py:4
+
+        def diriviation_sigmoid(x):
+            return np.exp(-x) / ((1 + np.exp(-x)) ** 2)
+
+        grad_backword = grad_output * diriviation_sigmoid(self._saved_tensor)
+        return grad_backword
+
+
+# ../codes/layers.py:5
+        def gelu(x):
+            return 0.5 * x * (1 + np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * np.power(x, 3))))
+
+        activatd_input = gelu(input)
+        self._saved_for_backward(input)
+        return activatd_input
+
+# ../codes/layers.py:6
+        # Refference: https://alaaalatif.github.io/2019-04-11-gelu/
+        # Refference: for the inplimentation of gelu's derviation, I asked for help from Zhiyuan Zeng, StudentID 2020010864
+        #* I suspect that TAs wanna us to use delta = 1e(-5) to compute the derivatives
+
+        def diriviation_gelu(x):
+            return 0.5 * (1 + np.tanh(np.sqrt(2 / np.pi) \
+                * (x + 0.044715 * np.power(x, 3)))) + 0.5 * x * np.sqrt(2 / np.pi) * \
+                    (1 - np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * np.power(x, 3))))\
+                        ** 2 * (1 + 3 * 0.044715 * np.power(x, 2))
+
+        def apropriate_derivative_gelu(x):
+            def gelu(x):
+                return 0.5 * x * (1 + np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * np.power(x, 3))))
+            delta = 1e-6
+            return (gelu(x + delta) - gelu(x - delta)) / (2 * delta)
+
+        grad_backword = grad_output * apropriate_derivative_gelu(self._saved_tensor)
+        return grad_backword
+
+# ../codes/layers.py:7
+        self._saved_for_backward(input)
+        matmul_result = np.matmul(input, self.W)
+        forward = matmul_result + self.b
+        return forward
+
+# ../codes/layers.py:8
+        if self._saved_tensor is None:
+            raise ValueError('No saved tensor for backward')
+        else:
+            self.grad_W = np.matmul(self._saved_tensor.T, grad_output)
+            self.grad_b = grad_output.sum(0)
+            backward = np.matmul(grad_output, self.W.T)
+            return backward
+
+# ../codes/loss.py:1
+        #*  loss input 是 batch_size * num_class 的矩阵，target 是 batch_size * num_class 的矩阵（one-hot）
+        def _EuclideanLoss(input, target):
+            return np.sum((input - target)**2) / 2
+        loss = _EuclideanLoss(input, target) / input.shape[0]
+        return loss
+
+# ../codes/loss.py:2
+        def _diriviation_EuclideanLoss(input, target):
+            return input - target
+        diriviation_loss = _diriviation_EuclideanLoss(input, target)
+        return diriviation_loss / input.shape[0]
+
+# ../codes/loss.py:3
+        # Refference: https://ml-cheatsheet.readthedocs.io/en/latest/loss_functions.html
+        #* 计算 softmax 前先减去最后一维的最大值
+        input_shift = input - input.max(axis=-1, keepdims=True)
+        exp_input = np.exp(input_shift)
+        prob = exp_input / (exp_input.sum(axis=-1, keepdims=True))
+        #* 为了避免梯度出现 NaN，需要做 clip
+        prob_clip = prob.clip(min=1e-12, max=1 - 1e-12)
+        #* 注意此处有了多个 batch，故而需要对 batch 内部的 loss 求均值
+        #! TODO? 真的要求均值吗？
+        corss_entropy = -(np.log(prob_clip) * target).sum(-1)
+        batch_loss = np.mean(corss_entropy)
+        return batch_loss
+
+# ../codes/loss.py:4
+        #! TODO
+        batch_size = input.shape[0]
+        input_shift = input - input.max(axis=-1, keepdims=True)
+        exp_input = np.exp(input_shift)
+        prob = exp_input / (exp_input.sum(-1, keepdims=True))
+        prob_clip = np.clip(prob, 1e-12, 1 - 1e-12)
+        loss = prob_clip - target
+        batched_loss = loss / batch_size
+        return batched_loss
+
+# ../codes/loss.py:5
+        # Refference: https://www.zhihu.com/question/47746939
+        # Refference: https://programmathically.com/understanding-hinge-loss-and-the-svm-cost-function/
+        #* 参考助教给的文档，此处 margin 就是 delta，默认为 5
+        #! TODO
+        # np.maxium 和 np.max 的区别？
+        h_k = np.maximum(input + (self.margin - (input * target).sum(-1, keepdims=True)), 0)
+        E_n = h_k.sum(axis=-1) - self.margin
+        E = np.mean(E_n)
+        return E
+
+# ../codes/loss.py:6
+        #! TODO
+        #* 所谓的合页函数，所以看着和 ReLU 是相似的
+        batch_size = input.shape[0]
+        marginal_grad = (self.margin - (input * target).sum(-1, keepdims=True) + input) > 0
+        #* here we get a array of bool, so we need to convert it to float
+        marginal_grad = marginal_grad.astype(float)
+        marginal_grad -= target * np.sum(marginal_grad, -1, keepdims=True)
+        loss = marginal_grad / batch_size
+        return loss
+
+
+########################
+# References
+########################
+
+########################
+# Other Modifications
+########################
+# _codes/layers.py -> ../codes/layers.py
+# 2 -
+# 9 +     # ! acutally we won't use the base class Layer, so these function are not required
+# 26 +     #! 什么是激活函数层，为什么要在此存下 _saved_for_backward，而且都是 input 而非激活后的 activation
+# 27 +     # 注意在计算梯度时，需要存下当前层的 input（求导是计算当前输入下的导数），然而梯度是递乘的，从后一直传递向前，故而需要乘上 grad_output
+# 80 +
+# 121 +         #! TODO add readme
+# 122 +         import numpy as np
+# 123 +         np.random.seed(1)
+# 124 +         #! add readme
+# 136 +         #* grad 是一般意义上的梯度，而 diff 是在 Adam 当中利用的冲量
+# 137 +
+# _codes/solve_net.py -> ../codes/solve_net.py
+# 3 -
+# 3 + #! TODO add readme
+# 4 + import wandb
+# 44 +             #! TODO add readme
+# 45 +             wandb.log({'train_accuracy': np.mean(acc_list), 'train_loss': np.mean(loss_list)})
+# 65 +     #! TODO add readme
+# 66 +     wandb.log({'test_accuracy': np.mean(acc_list), 'test_loss': np.mean(loss_list)})
+# _codes/run_mlp.py -> ../codes/run_mlp.py
+# 3 - from layers import Relu, Sigmoid, Linear, Gelu
+# 3 ?                                         ------
+# 3 + from layers import Gelu, Relu, Sigmoid, Linear
+# 3 ?                   ++++++
+# 8 -
+# 9 - train_data, test_data, train_label, test_label = load_mnist_2d('data')
+# 10 -
+# 11 - # Your model defintion here
+# 12 - # You should explore different model architecture
+# 13 - model = Network()
+# 14 - model.add(Linear('fc1', 784, 10, 0.01))
+# 15 -
+# 16 - loss = EuclideanLoss(name='loss')
+# 17 -
+# 18 - # Training configuration
+# 19 - # You should adjust these hyperparameters
+# 20 - # NOTE: one iteration means model forward-backwards one batch of samples.
+# 21 - #       one epoch means model has gone through all the training samples.
+# 22 - #       'disp_freq' denotes number of iterations in one epoch to display information.
+# 23 -
+# 25 -     'learning_rate': 0.0,
+# 25 ?                      ^^^
+# 9 +     'learning_rate': 1e-2,
+# 9 ?                      ^^^^
+# 26 -     'weight_decay': 0.0,
+# 26 ?                      --
+# 10 +     'weight_decay': 0,
+# 28 -     'batch_size': 100,
+# 28 ?                     -
+# 12 +     'batch_size': 10,
+# 29 -     'max_epoch': 100,
+# 29 ?                  ^^
+# 13 +     'max_epoch': 50,
+# 13 ?                  ^
+# 31 -     'test_epoch': 5
+# 31 ?                   ^
+# 15 +     'test_epoch': 1
+# 15 ?                   ^
+# 18 + #! 双层 sigmoid，softmax 用 lr = 1，其他 0.1
+# 19 + def parser_data():
+# 20 +     import argparse
+# 21 +     parser = argparse.ArgumentParser(prog='Basic experiments', description='Basic experiment in MLP', allow_abbrev=True)
+# 35 - for epoch in range(config['max_epoch']):
+# 36 -     LOG_INFO('Training @ %d epoch...' % (epoch))
+# 37 -     train_net(model, loss, config, train_data, train_label, config['batch_size'], config['disp_freq'])
+# 23 +     parser.add_argument('-n', '--hidden_layers_num', dest='hidden_layers_num', type=int, default=None, required=True, help='The number of hidden layers in the model.')
+# 24 +     parser.add_argument('-a', '--activate_function', dest='activate_function', type=str, default=None, required=False, help="the activation function to be used")
+# 25 +     parser.add_argument('-l', '--loss_function', dest='loss_function', type=str, default=None, required=True, help="the loss function to be used")
+# 26 +     parser.add_argument(
+# 27 +         "--t",
+# 28 +         action="store_true",
+# 29 +         dest="tune",
+# 30 +         help="use to massive tune experiments",
+# 31 +     )
+# 32 +     parser.add_argument('-lr', '--learning_rate', dest='learning_rate', type=float, default=config['learning_rate'], help='the learning rate')
+# 33 +     parser.add_argument('-w', '--weight_decay', dest='weight_decay', type=float, default=config['weight_decay'], required=False, help='the weight decay')
+# 34 +     parser.add_argument('-b', '--batch_size', dest='batch_size', type=int, default=config['batch_size'], required=False, help='the batch size')
+# 36 +     args = parser.parse_args()
+# 37 +     hidden_layers_num = args.hidden_layers_num
+# 38 +     activate_function = args.activate_function
+# 39 +     loss_function = args.loss_function
+# 40 +
+# 41 +     config['learning_rate'] = args.learning_rate
+# 42 +     config['weight_decay'] = args.weight_decay
+# 43 +     config['batch_size'] = args.batch_size
+# 44 +
+# 45 +     tune = args.tune
+# 46 +     if tune:
+# 47 +         appendix_name = str(config["learning_rate"]) + "_" + str(config["weight_decay"]) + "_" + str(config["batch_size"])
+# 48 +     else:
+# 49 +         appendix_name = None
+# 50 +
+# 51 +     return (hidden_layers_num, activate_function, loss_function, appendix_name)
+# 52 +
+# 53 + def model_and_loss_generator(hidden_layers_num, activate_function, loss_function):
+# 54 +     model = Network()
+# 55 +     if hidden_layers_num == 0:
+# 56 +         model.add(Linear('fc1', 784, 10, 0.01))
+# 57 +
+# 58 +     elif hidden_layers_num == 1:
+# 59 +         model.add(Linear('fc1', 784, 100, 0.01))
+# 60 +         if activate_function == 'Gelu':
+# 61 +                 model.add(Gelu("Gelu"))
+# 62 +                 model.add(Linear('fc2', 100, 10, 0.01))
+# 63 +         elif activate_function == 'Relu':
+# 64 +             model.add(Relu("Relu"))
+# 65 +             model.add(Linear('fc2', 100, 10, 0.01))
+# 66 +         elif activate_function == 'Sigmoid':
+# 67 +             model.add(Sigmoid("Sigmoid"))
+# 68 +             model.add(Linear('fc2', 100, 10, 0.01))
+# 69 +         else:
+# 70 +             raise ValueError("Unknown activation function")
+# 71 +
+# 72 +     elif hidden_layers_num == 2:
+# 73 +         model.add(Linear('fc1', 784, 100, 0.01))
+# 74 +         if activate_function == 'Gelu':
+# 75 +             model.add(Gelu("Gelu"))
+# 76 +             model.add(Linear('fc1', 100, 100, 0.01))
+# 77 +             model.add(Gelu("Gelu"))
+# 78 +             model.add(Linear('fc1', 100, 10, 0.01))
+# 79 +         elif activate_function == 'Relu':
+# 80 +             model.add(Relu("Relu"))
+# 81 +             model.add(Linear('fc1', 100, 100, 0.01))
+# 82 +             model.add(Relu("Relu"))
+# 83 +             model.add(Linear('fc1', 100, 10, 0.01))
+# 84 +         elif activate_function == 'Sigmoid':
+# 85 +             model.add(Sigmoid("Sigmoid"))
+# 86 +             model.add(Linear('fc1', 100, 100, 0.01))
+# 87 +             model.add(Sigmoid("Sigmoid"))
+# 88 +             model.add(Linear('fc1', 100, 10, 0.01))
+# 89 +         else:
+# 90 +             raise ValueError("Unknown activation function")
+# 91 +
+# 92 +     if loss_function == 'HingeLoss':
+# 93 +         loss = HingeLoss(name='loss')
+# 94 +     elif loss_function == 'SoftmaxCrossEntropyLoss':
+# 95 +         loss = SoftmaxCrossEntropyLoss(name='loss')
+# 96 +     elif loss_function == 'EuclideanLoss':
+# 97 +         loss = EuclideanLoss(name='loss')
+# 98 +     else:
+# 99 +         raise ValueError("Unknown loss function")
+# 100 +     return model, loss
+# 101 +
+# 102 +
+# 103 + def main(model, loss, run_name):
+# 104 +     import wandb
+# 105 +     wandb.init(project="Test New Code", name=f"{run_name}")
+# 106 +     print(run_name)
+# 107 +
+# 108 +     train_data, test_data, train_label, test_label = load_mnist_2d('data')
+# 109 +
+# 110 +     for epoch in range(config['max_epoch']):
+# 111 +         LOG_INFO('Training @ %d epoch...' % (epoch))
+# 112 +         train_net(model, loss, config, train_data, train_label, config['batch_size'], config['disp_freq'])
+# 113 +
+# 39 -     if epoch % config['test_epoch'] == 0:
+# 114 +         if epoch % config['test_epoch'] == 0:
+# 114 ? ++++
+# 40 -         LOG_INFO('Testing @ %d epoch...' % (epoch))
+# 115 +             LOG_INFO('Testing @ %d epoch...' % (epoch))
+# 115 ? ++++
+# 41 -         test_net(model, loss, test_data, test_label, config['batch_size'])
+# 116 +             test_net(model, loss, test_data, test_label, config['batch_size'])
+# 116 ? ++++
+# 117 +
+# 118 + if __name__ == '__main__':
+# 119 +     hidden_layers_num, activate_function, loss_function, appendix_name = parser_data()
+# 120 +     model, loss = model_and_loss_generator(hidden_layers_num, activate_function, loss_function)
+# 121 +     if appendix_name != None:
+# 122 +         run_name = str(hidden_layers_num)  + (("_" + str(activate_function)) if activate_function else "") + "_" + str(loss_function) + ("_" + appendix_name)
+# 123 +     else:
+# 124 +         run_name = str(hidden_layers_num)  + (("_" + str(activate_function)) if activate_function else "") + "_" + str(loss_function)
+# 125 +     print(run_name)
+# 126 +     main(model, loss, run_name)
+# _codes/loss.py -> ../codes/loss.py
+# 2 + import re
+# 8 -
+# 9 +     # target 是 label 组成的 tensor
+# 28 + #! Loss 层不是就到头了吗，forward 给谁，从谁那儿 backard
+# 29 + #! Softmax is a way to recurrence, and cross-entropy is the way conjuated to compute loss
+# 67 +         self.margin = margin
+# 93 +         # TODO END
+# 54 -
+
