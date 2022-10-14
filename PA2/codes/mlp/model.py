@@ -43,10 +43,11 @@ class BatchNorm1d(nn.Module):
 			average, variance = torch.mean(input, dim=0), torch.var(input, dim=0)
 			self.running_mean = self.momentum_1 * self.running_mean + (1 - self.momentum_1) * average
 			self.running_var = self.momentum_2 * self.running_var + (1 - self.momentum_2) * variance
-			normalize_output = (input - average) / torch.sqrt(variance + self.eposilon)*self.weight + self.bias
+			normalize_output = (input - average) / torch.sqrt(variance + self.eposilon) * self.weight + self.bias
 			return normalize_output
 		else:
-			normalize_output = (input - self.running_mean) / torch.sqrt(self.running_var + self.eposilon)*self.weight + self.bias
+			normalize_output = (input - self.running_mean) / torch.sqrt(self.running_var \
+       		+ self.eposilon) * self.weight + self.bias
 			return normalize_output
 
 	# TODO END
