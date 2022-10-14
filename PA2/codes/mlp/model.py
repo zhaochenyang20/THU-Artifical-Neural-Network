@@ -1,12 +1,5 @@
-# -*- coding: utf-8 -*-
-
-from locale import normalize
-from statistics import variance
-from numpy import average
-from sympy import re
 import torch
 from torch import nn
-from torch.nn import init
 from torch.nn.parameter import Parameter
 
 
@@ -68,7 +61,7 @@ class Dropout(nn.Module):
 		# input: [batch_size, num_feature_map * height * width]
 		if self.training:
 			#! 这里和 Lafite 实现也不太一样
-			dropout_distribution = torch.bernoulli(torch.ones(input.shape) * (1 - self.p))
+			dropout_distribution = torch.bernoulli(torch.ones_like(input) * (1 - self.p))
 			return input * dropout_distribution / (1 - self.p)
 		else:
 			return input
