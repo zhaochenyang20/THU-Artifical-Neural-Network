@@ -1,60 +1,110 @@
 # -*- coding: utf-8 -*-
 
+from numpy import average
 import torch
 from torch import nn
 from torch.nn import init
 from torch.nn.parameter import Parameter
+
+
+class Config():
+	def __init__(self, channel_one=128, kernel_size_one=5, channel_two=64, kernal_size_two=3, \
+     max_pooling_size=2, output_feature_channel = 2304):
+		self.channel_one = channel_one
+		self.kernel_size_one = kernel_size_one
+		self.channel_two = channel_two
+		self.kernal_size_two = kernal_size_two
+		self.max_pooling_size = max_pooling_size
+		self.output_feature_channel = output_feature_channel
+
+
 class BatchNorm2d(nn.Module):
 	# TODO START
-	def __init__(self, num_features):
+	def __init__(self, num_features, momentum_1=0.8, momentum_2=0.9, eposilon=1e-5):
 		super(BatchNorm2d, self).__init__()
 		self.num_features = num_features
+		self.momentum_1 = momentum_1
+		self.momentum_2 = momentum_2
+		self.eposilon = eposilon
+		self.weight = Parameter(torch.ones(num_features))
+		self.bias = Parameter(torch.zeros(num_features))
+		self.register_buffer('running_mean', torch.zeros(num_features))
+		self.register_buffer('running_var', torch.ones(num_features))
 
-		# Parameters
-		self.weight = 
-		self.bias = 
-
-		# Store the average mean and variance
-		self.register_buffer('running_mean', )
-		self.register_buffer('running_var', )
-		
-		# Initialize your parameter
 
 	def forward(self, input):
 		# input: [batch_size, num_feature_map, height, width]
-		return input
-	# TODO END
+		if self.training:
+			batch_size, num_feature_map, height, width = input.shape
+			input = input.permute(0, 2, 3, 1)
+			input = input.reshape(-1, num_feature_map)
+			average, variance = torch.mean(input, dim=0), torch.var(input, dim=0)
+			self.running_mean = self.momentum_1 * self.running_mean + (1 - self.momentum_1) * average
+			self.running_var = self.momentum_2 * self.running_var + (1 - self.momentum_2) * variance
+			input = input.reshape(batch_size, height, width, num_feature_map).permute(0, 3, 1, 2)
+			input_mean, input_var = average.unsqueeze(0).unsqueeze(-1).unsqueeze(-1), variance.unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
+			return (input - input_mean) / torch.sqrt(self.eposilon + input_var) * self.weight.unsqueeze(0).unsqueeze(-1).unsqueeze(-1) + self.bias.unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
+ 	# TODO END
+
 
 class Dropout(nn.Module):
-	# TODO START
-	def __init__(self, p=0.5):
-		super(Dropout, self).__init__()
-		self.p = p
+    # TODO START
+    def __init__(self, p=0.5):
+        super(Dropout, self).__init__()
+        self.p = p
 
-	def forward(self, input):
-		# input: [batch_size, num_feature_map, height, width]
-		return input
-	# TODO END
+    def forward(self, input):
+        # input: [batch_size, num_feature_map, height, width]
+        dp = torch.bernoulli(torch.ones(
+            size=(input.shape[0], input.shape[1], 1, 1)) * (1 - self.p)).to(input.device)
+        if not self.training:
+            return input
+        else:
+            return dp * input / (1 - self.p)
+    # TODO END
 
 class Model(nn.Module):
-	def __init__(self, drop_rate=0.5):
-		super(Model, self).__init__()
-		# TODO START
-		# Define your layers here
-		# TODO END
-		self.loss = nn.CrossEntropyLoss()
+    def __init__(self, drop_rate=0.5):
+        super(Model, self).__init__()
+        # TODO START
+        # Define your layers here
+        config = Config()
+        self.model_list_1 = nn.ModuleList([
+            nn.Conv2d(in_channels=3, out_channels=config.channel1,
+                      kernel_size=config.kernel_size1),
+            BatchNorm2d(config.channel1),
+            nn.ReLU(),
+            Dropout(drop_rate),
+            nn.MaxPool2d(config.max_pool_size),
+            nn.Conv2d(in_channels=config.channel1,
+                      out_channels=config.channel2, kernel_size=config.kernel_size2),
+            BatchNorm2d(config.channel2),
+            nn.ReLU(),
+            Dropout(drop_rate),
+            nn.MaxPool2d(config.max_pool_size),
+        ])
+        self.model_list_2 = nn.ModuleList(
+            [nn.Linear(config.output_feature_channel, 10)])
+        # TODO END
+        self.loss = nn.CrossEntropyLoss()
 
-	def forward(self, x, y=None):
-		# TODO START
-		# the 10-class prediction output is named as "logits"
-		logits = 
-		# TODO END
+    def forward(self, x, y=None):
+        # TODO START
+        # the 10-class prediction output is named as "logits"
+        for sub_module in self.model_list_1:
+            x = sub_module(x)
+        x = x.reshape(x.shape[0], -1)
+        for sub_module in self.model_list_2:
+            x = sub_module(x)
+        logits = x
+        # TODO END
 
-		pred = torch.argmax(logits, 1)  # Calculate the prediction result
-		if y is None:
-			return pred
-		loss = self.loss(logits, y)
-		correct_pred = (pred.int() == y.int())
-		acc = torch.mean(correct_pred.float())  # Calculate the accuracy in this mini-batch
+        pred = torch.argmax(logits, 1)  # Calculate the prediction result
+        if y is None:
+            return pred
+        loss = self.loss(logits, y)
+        correct_pred = (pred.int() == y.int())
+        # Calculate the accuracy in this mini-batch
+        acc = torch.mean(correct_pred.float())
 
-		return loss, acc
+        return loss, acc
