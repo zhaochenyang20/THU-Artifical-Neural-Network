@@ -39,17 +39,16 @@ class BatchNorm1d(nn.Module):
 		# input: [batch_size, num_feature_map * height * width]
 		#! TODO 为什么是 training 不是 train
   		#! 这里我用的是 torch 的 mean 和 variance
+		#! 仅在训练时候更新 buffer，测试时直接用 buffer 即可
 		if self.training:
 			average, variance = torch.mean(input, dim=0), torch.var(input, dim=0)
 			self.running_mean = self.momentum_1 * self.running_mean + (1 - self.momentum_1) * average
 			self.running_var = self.momentum_2 * self.running_var + (1 - self.momentum_2) * variance
-			normalize_output = (input - average) / torch.sqrt(variance + self.eposilon) * self.weight + self.bias
-			return normalize_output
 		else:
-			normalize_output = (input - self.running_mean) / torch.sqrt(self.running_var \
-       		+ self.eposilon) * self.weight + self.bias
-			return normalize_output
+			average, variance = self.running_mean, self.running_var
 
+		normalized_input = (input - average) / torch.sqrt(variance + self.eposilon) * self.weight + self.bias
+		return normalized_input
 	# TODO END
 
 class Dropout(nn.Module):
@@ -61,7 +60,6 @@ class Dropout(nn.Module):
 	def forward(self, input):
 		# input: [batch_size, num_feature_map * height * width]
 		if self.training:
-			#! 这里和 Lafite 实现也不太一样
 			dropout_distribution = torch.bernoulli(torch.ones_like(input) * (1 - self.p))
 			return input * dropout_distribution / (1 - self.p)
 		else:
@@ -75,7 +73,7 @@ class Model(nn.Module):
 		# Define your layers here
 		#! nn.Sequential 和 nn.ModuleList 区别
 		config = Config()
-		self.layers = nn.ModuleList(
+		self.layers = nn.Sequential(
 			[
 				nn.Linear(config.num_features, config.hidden_neuron),
 				BatchNorm1d(config.hidden_neuron),
@@ -91,9 +89,7 @@ class Model(nn.Module):
 	def forward(self, x, y=None):
 		# TODO START
 		# the 10-class prediction output is named as "logits"
-		for each_layer in self.layers:
-			x = each_layer(x)
-		logits = x
+		logits = self.layers(x)
 		# TODO END
 
 		pred = torch.argmax(logits, 1)  # Calculate the prediction result
