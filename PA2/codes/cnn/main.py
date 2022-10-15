@@ -192,8 +192,4 @@ if __name__ == '__main__':
             result = inference(mlp_model, test_image)[0]
             if result == y_test[i]:
                 count += 1
-<<<<<<< HEAD
         print("test accuracy: {}".format(float(count) / len(X_test)))
-=======
-        print("test accuracy: {}".format(float(count) / len(X_test)))
->>>>>>> 6933f2856d3b6741d1e45f15943b68bd7bd2fd47
