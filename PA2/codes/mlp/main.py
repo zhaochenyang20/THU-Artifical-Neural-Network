@@ -101,7 +101,7 @@ def inference(model, X):  # Test Process
 
 
 if __name__ == '__main__':
-    wandb.init(project="dropout", entity="eren-zhao", name="{batch_size}_{learning_rate}_{drop_rate}")
+    wandb.init(project="dropout", entity="eren-zhao", name=f"{batch_size}_{learning_rate}_{drop_rate}")
     wandb.config = {
     "learning_rate": learning_rate,
      "batch_size": batch_size,
@@ -121,6 +121,7 @@ if __name__ == '__main__':
         mlp_model = Model(drop_rate=args.drop_rate)
         mlp_model.to(device)
         print(mlp_model)
+        wandb.watch(mlp_model)
         optimizer = optim.Adam(mlp_model.parameters(), lr=args.learning_rate)
 
         pre_losses = [1e18] * 3
