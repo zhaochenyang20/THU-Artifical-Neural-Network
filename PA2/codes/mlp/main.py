@@ -101,7 +101,7 @@ def inference(model, X):  # Test Process
 
 
 if __name__ == '__main__':
-    wandb.init(project="dropout", entity="eren-zhao", name="{batch_size}_{learning_rate}_{drop_rate}")
+    wandb.init(project="dropout", entity="eren-zhao", name=f"{batch_size}_{learning_rate}_{drop_rate}")
     wandb.config = {
     "learning_rate": learning_rate,
      "batch_size": batch_size,
