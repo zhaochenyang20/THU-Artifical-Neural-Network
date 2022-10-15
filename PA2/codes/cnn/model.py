@@ -6,10 +6,8 @@ from distutils.sysconfig import get_makefile_filename
 >>>>>>> 6933f2856d3b6741d1e45f15943b68bd7bd2fd47
 import torch
 from torch import nn
-from torch.nn import init
 from torch.nn.parameter import Parameter
 import config
-
 
 class BatchNorm2d(nn.Module):
 	# TODO START
