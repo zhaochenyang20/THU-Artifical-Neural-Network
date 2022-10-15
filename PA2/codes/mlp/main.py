@@ -6,12 +6,12 @@ import time
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.optim as optim
 import json
 
 from model import Model
 from load_data import load_cifar_2d
+import wandb
 
 parser = argparse.ArgumentParser()
 
@@ -32,7 +32,7 @@ parser.add_argument('--train_dir', type=str, default='./train',
 parser.add_argument('--inference_version', type=int, default=0,
                     help='The version for inference. Set 0 to use latest checkpoint. Default: 0')
 args = parser.parse_args()
-
+batch_size, learning_rate, drop_rate = args.batch_size, args.learning_rate, args.drop_rate
 
 def shuffle(X, y, shuffle_parts):
     chunk_size = int(len(X) / shuffle_parts)
@@ -101,6 +101,12 @@ def inference(model, X):  # Test Process
 
 
 if __name__ == '__main__':
+    wandb.init(project="dropout", entity="eren-zhao", name="{batch_size}_{learning_rate}_{drop_rate}")
+    wandb.config = {
+    "learning_rate": learning_rate,
+     "batch_size": batch_size,
+    "drop_rate": drop_rate
+    }
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_acc_list = []
     train_loss_list = []
@@ -117,10 +123,6 @@ if __name__ == '__main__':
         print(mlp_model)
         optimizer = optim.Adam(mlp_model.parameters(), lr=args.learning_rate)
 
-        # model_path = os.path.join(args.train_dir, 'checkpoint_%d.pth.tar' % args.inference_version)
-        # if os.path.exists(model_path):
-        # 	mlp_model = torch.load(model_path)
-
         pre_losses = [1e18] * 3
         best_val_acc = 0.0
         for epoch in range(1, args.num_epochs+1):
@@ -135,10 +137,6 @@ if __name__ == '__main__':
                 best_val_acc = val_acc
                 best_epoch = epoch
                 test_acc, test_loss = valid_epoch(mlp_model, X_test, y_test)
-                # with open(os.path.join(args.train_dir, 'checkpoint_{}.pth.tar'.format(epoch)), 'wb') as fout:
-                # 	torch.save(mlp_model, fout)
-                # with open(os.path.join(args.train_dir, 'checkpoint_0.pth.tar'), 'wb') as fout:
-                # 	torch.save(mlp_model, fout)
 
             epoch_time = time.time() - start_time
             print("Epoch " + str(epoch) + " of " +
@@ -153,6 +151,14 @@ if __name__ == '__main__':
             print("  best validation accuracy:      " + str(best_val_acc))
             print("  test loss:                     " + str(test_loss))
             print("  test accuracy:                 " + str(test_acc))
+            wandb.log({
+                "train_acc": train_acc,
+                "train_loss": train_loss,
+                "val_acc": val_acc,
+                "val_loss": val_loss,
+                "test_acc": test_acc,
+                "test_loss": test_loss,
+            })
             train_acc_list.append(train_acc)
             train_loss_list.append(train_loss)
             val_acc_list.append(val_acc)
