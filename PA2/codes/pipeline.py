@@ -1,8 +1,10 @@
 import os
 
 def pipeline():
-    os.system("python3 ./mlp/pipeline.py")
-    os.system("python3 ./cnn/pipeline.py")
+    os.chdir("./mlp")
+    os.system("python3 pipeline.py")
+    os.chdir("../cnn")
+    os.system("python3 pipeline.py")
 
 if __name__ == "__main__":
     pipeline()
