@@ -75,14 +75,12 @@ class Model(nn.Module):
 		#! nn.Sequential 和 nn.ModuleList 区别
 		config = Config()
 		self.layers = nn.Sequential(
-			[
 				nn.Linear(config.num_features, config.hidden_neuron),
 				BatchNorm1d(config.hidden_neuron),
 				#! 一定用 ReLU 吗？
     			nn.ReLU(),
 				Dropout(p = drop_rate),
 				nn.Linear(config.hidden_neuron, config.num_classes),
-			]
 		)
 		# TODO ENDgp;
 		self.loss = nn.CrossEntropyLoss()
