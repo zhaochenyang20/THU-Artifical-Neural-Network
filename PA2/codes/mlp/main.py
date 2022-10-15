@@ -15,7 +15,7 @@ import wandb
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--batch_size', type=int, default=100,
+parser.add_argument('--batch_size', type=int, default=4096,
                     help='Batch size for mini-batch training and evaluating. Default: 100')
 parser.add_argument('--num_epochs', type=int, default=20,
                     help='Number of training epoch. Default: 20')
