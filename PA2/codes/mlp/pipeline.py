@@ -9,7 +9,7 @@ def get_all_combinations():
 
 def pipeline():
     for batch_size, learning_rate, drop_rate in get_all_combinations():
-        subprocess.run(f"python3 main.py --batch_size {batch_size} --learning_rate {learning_rate} --drop_rate {drop_rate}")
+        subprocess.run(f"python3 main.py --batch_size {batch_size} --learning_rate {learning_rate} --drop_rate {drop_rate}", shell=True)
 
 if __name__ == "__main__":
     pipeline()
