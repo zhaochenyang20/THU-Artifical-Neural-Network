@@ -51,34 +51,6 @@ class BatchNorm1d(nn.Module):
 		return normalized_input
 	# TODO END
 
-class BatchNorm2d(nn.Module):
-	# TODO START
-	def __init__(self, num_features, momentum_1=0.8, momentum_2=0.9, eposilon=1e-5):
-		super(BatchNorm2d, self).__init__()
-		self.num_features = num_features
-		self.momentum_1 = momentum_1
-		self.momentum_2 = momentum_2
-		self.eposilon = eposilon
-		self.weight = Parameter(torch.ones(num_features))
-		self.bias = Parameter(torch.zeros(num_features))
-		self.register_buffer('running_mean', torch.zeros(num_features))
-		self.register_buffer('running_var', torch.ones(num_features))
-
-	def forward(self, input):
-		# input: [batch_size, num_feature_map, height, width]
-		if self.training:
-			miu = input.mean([0, 2, 3])
-			sigma2 = input.var([0, 2, 3])
-			self.running_mean = 0.9 * self.running_mean + 0.1 * miu
-			self.running_var = 0.9 * self.running_var + 0.1 * sigma2
-		else:
-			miu = self.running_mean
-			sigma2 = self.running_var
-		output = (input - miu[:, None, None]) / torch.sqrt(sigma2[:, None, None] + 1e-5)
-		output = self.weight[:, None, None] * output + self.bias[:, None, None]
-		return output
-	# TODO END
-
 class Dropout(nn.Module):
 	# TODO START
 	def __init__(self, p=0.5):
@@ -104,7 +76,7 @@ class Model(nn.Module):
 		config = Config()
 		self.layers = nn.Sequential(
 				nn.Linear(config.num_features, config.hidden_neuron),
-				BatchNorm2d(config.hidden_neuron),
+				BatchNorm1d(config.hidden_neuron),
 				#! 一定用 ReLU 吗？
     			nn.ReLU(),
 				Dropout(p = drop_rate),
