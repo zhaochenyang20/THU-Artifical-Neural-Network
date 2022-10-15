@@ -7,7 +7,21 @@ from distutils.sysconfig import get_makefile_filename
 import torch
 from torch import nn
 from torch.nn.parameter import Parameter
-import config
+
+class Config():
+    def __init__(self, batch_size=100, hidden_neuron=100, num_epochs=20, learning_rate=1e-5, drop_rate=0.5,  kernel_size1=5, kernel_size2=3, channel1=128, channel2=64,\
+                 output_feature_channel=2304, max_pool_size=2):
+        self.batch_size = batch_size
+        self.hidden_neuron = hidden_neuron
+        self.num_epochs = num_epochs
+        self.learning_rate = learning_rate
+        self.drop_rate = drop_rate
+        self.kernel_size1 = kernel_size1
+        self.kernel_size2 = kernel_size2
+        self.output_feature_channel = output_feature_channel
+        self.max_pool_size = max_pool_size
+        self.channel1 = channel1
+        self.channel2 = channel2
 
 class BatchNorm2d(nn.Module):
 	# TODO START
@@ -58,6 +72,7 @@ class Model(nn.Module):
     def __init__(self, drop_rate=0.5):
         super(Model, self).__init__()
         # TODO START
+        config = config()
         # Define your layers here
         self.model_list_1 = nn.ModuleList([
             nn.Conv2d(in_channels=3, out_channels=config.channel1,
