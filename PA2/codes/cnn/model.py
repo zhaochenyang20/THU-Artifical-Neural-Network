@@ -67,7 +67,7 @@ class Model(nn.Module):
     def __init__(self, drop_rate=0.5):
         super(Model, self).__init__()
         # TODO START
-        config = config()
+        config = Config()
         # Define your layers here
         self.model_list_1 = nn.ModuleList([
             nn.Conv2d(in_channels=3, out_channels=config.channel1,
