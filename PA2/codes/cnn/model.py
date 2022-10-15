@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 import torch
 from torch import nn
-from torch.nn import init
 from torch.nn.parameter import Parameter
 import config
-
 
 class BatchNorm2d(nn.Module):
 	# TODO START
