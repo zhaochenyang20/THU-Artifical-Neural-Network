@@ -85,14 +85,14 @@ class Model(nn.Module):
             Dropout(drop_rate),
             nn.MaxPool2d(config.max_pool_size),
         )
-        self.classify = nn.Linear(4096, 10)
+        self.classify = nn.Linear(config.output_feature_channel, 10)
         # TODO END
         self.loss = nn.CrossEntropyLoss()
 
     def forward(self, x, y=None):
         # TODO START
         # the 10-class prediction output is named as "logits"
-        x = self.layers()
+        x = self.layers(x)
         x = x.reshape(x.shape[0], -1)
         logits = self.classify(x)
         # TODO END
