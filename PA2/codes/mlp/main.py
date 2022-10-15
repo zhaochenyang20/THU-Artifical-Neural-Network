@@ -121,6 +121,7 @@ if __name__ == '__main__':
         mlp_model = Model(drop_rate=args.drop_rate)
         mlp_model.to(device)
         print(mlp_model)
+        wandb.watch(mlp_model)
         optimizer = optim.Adam(mlp_model.parameters(), lr=args.learning_rate)
 
         pre_losses = [1e18] * 3
