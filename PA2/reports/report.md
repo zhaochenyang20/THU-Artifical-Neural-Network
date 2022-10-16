@@ -123,7 +123,7 @@ train loss 与 validation loss 的区别主要有如下原因：
 
 # ANN PA2 深入讨论
 
-为了探讨 Dropout 和 batch normalization 的意义，我分别控制 CNN 与 MLP 的参数为 128_0.001_0.2 与 1024_0.001_0.2，尝试两组对比实验：
+为了探讨 Dropout（默认为 Dropout2d） 和 batch normalization 的意义，我分别控制 CNN 与 MLP 的参数为 128_0.001_0.2 与 1024_0.001_0.2，尝试两组对比实验：
 
 1. 同时带有 batch normalization 和 Dropout
 2. 仅有 Dropout
@@ -176,7 +176,7 @@ train loss 与 validation loss 的区别主要有如下原因：
 
 ## Dropout
 
-对于上图所示的 CNN 而言，加入 Dropout 后，模型在 validation 上的表现均优于没有加入 Dropout 的对应模型。而考虑到在 train 上，没有加入 Dropout 的模型相较加入了 Dropout 的模型有着显著的优势。可以见得，Dropout 正则化方法有效地提升了模型的泛化能力，减弱了过拟合现象。
+对于上图所示的 CNN 而言，加入 Dropout 后，模型在 validation 上的表现均优于没有加入 Dropout 的对应模型。而考虑到在 train 上，没有加入 Dropout 的模型相较加入了 Dropout 的模型有着显著的优势。可以见得，Dropout 正则化方法有效地提升了模型的泛化能力，显著减弱了过拟合现象。
 
 Weight Decay，Bagging，Dropout 都是深度学习中非常主流的正则化方法。为了讨论 Dropout 的优劣，有必要先讨论与 Dropout 有着高度相关性的 Bagging 方法。
 
@@ -233,7 +233,7 @@ Dropout 启发其他以随机方法训练指数量级的共享权重的集成。
 
 ## BatchNorm
 
-BatchNorm 同样也有归一化的效果，加入 BatchNorm 后，模型在 validation 上的表现均优于或接近没有加入 BatchNorm 的对应模型。而考虑到在 train 上，没有加入 BatchNorm 的模型相交加入了 BatchNorm 的模型有着显著的优势。可以见得，BatchNorm 正则化方法有效地提升了模型的泛化能力，减弱了过拟合现象。
+BatchNorm 同样也有归一化的效果，加入 BatchNorm 后，模型在 validation 上的表现均优于或接近没有加入 BatchNorm 的对应模型。而考虑到在 train 上，没有加入 BatchNorm 的模型相交加入了 BatchNorm 的模型有着显著的优势。可以见得，BatchNorm 正则化方法有效地提升了模型的泛化能力，显著减弱了过拟合现象。
 
 我们进一步讨论 BatchNorm 的正则化效果。
 
@@ -262,3 +262,94 @@ $$
 
 # Bonus
 
+## Dropout1d vs Dropout2d
+
+如图所示，以 CNN batch_size = 128 learning_rate = 0.001 为基础模型，分别设置 Dropout_rate = {0, 0.2, 0.4, 0.6, 0.8}，对比 dropout1d 与 dropout2d。所得结果如下图：
+
+<div align=center>
+<img width="600" src="./pics/dimention_train_acc.png"/>
+</div>
+<div align=center>1d Dropout vs 2d Dropout Training Accuracy<br/></div>
+
+<div align=center>
+<img width="600" src="./pics/dimention_train_loss.png"/>
+</div>
+<div align=center>1d Dropout vs 2d Dropout Training Loss<br/></div>
+
+<div align=center>
+<img width="600" src="./pics/dimention_val_acc.png"/>
+</div>
+<div align=center>1d Dropout vs 2d Dropout Validation Accuracy<br/></div>
+
+<div align=center>
+<img width="600" src="./pics/dimention_val_loss.png"/>
+</div>
+<div align=center>1d Dropout vs 2d Dropout Validation Loss<br/></div>
+
+总体上，当 CNN 层数并不多时，Dropout1d 略微逊色于 Dropout2d；根据先验经验， 当 CNN 层数足够多，过拟合概率足够大时，Dropout1d 的效果会显著逊色于 Dropout2d。个人认为，这一现象的原因可以归结为 Dropout1d 会把一个 feature map 视为整体，每次决定整个 feature map 的取舍。放弃某一 feature map 时，模型会丧失整个 feature map 的全部特征；而使用 Dropout2d 尚且能够根据 feature map 残留的特征进行推理。整个 feature map 的丢失加大了训练难度，使得模型容易欠拟合，正如在 Dropout 的优劣一节的讨论——
+
+> 但在一个完整的系统上使用 Dropout 的代价可能非常显著。因为 Dropout 是一个正则化技术，它减少了模型的有效容量。为了抵消这种影响，我们必须增大模型规模。不出意外的话，使用 Dropout 时最佳验证集的误差会低很多，但这是以更大的模型和更多训练算法的迭代次数为代价换来的。
+
+过于强硬的 Dropout1d 策略导致模型的训练难度显著上升，这需要更大的模型和更的迭代次数；在相同的迭代次数下，Dropout1d 的效果不敌 Dropout2d 可以预期。而在本次较为简单的双层 CNN 下，Dropout1d 的效果与 Dropout2d 相近也能够接受。
+
+## Drop Rate
+
+以 CNN batch_size = 128 learning_rate = 0.001 为基础模型，设置 Dropout_rate = {0, 0.2, 0.4, 0.6, 0.8} 且采用 Dropout2d，得到的结果如下图所示：
+
+<div align=center>
+<img width="600" src="./pics/dropout_train_acc.png"/>
+</div>
+<div align=center>Droput Rate Based On CNN Training Accuracy<br/></div>
+
+<div align=center>
+<img width="600" src="./pics/dropout_train_loss.png"/>
+</div>
+<div align=center>Droput Rate Based On CNN Training Loss<br/></div>
+
+<div align=center>
+<img width="600" src="./pics/dropout_val_acc.png"/>
+</div>
+<div align=center>Droput Rate Based On CNN Validation Accuracy<br/></div>
+
+<div align=center>
+<img width="600" src="./pics/dropout_val_loss.png"/>
+</div>
+<div align=center>Droput Rate Based On CNN Validation Loss<br/></div>
+
+可以发觉，随着 Dropout Rate 的增大，training set 上模型的表单调递减。这非常符合前文的讨论，毕竟 dropout 机制的计入会导致模型的训练难度上升，在相同的训练轮次内，难以充分利用数据特征，表现力会有所下降。
+
+而在 validation set 上，模型的表现能力在 Dropout Rate = 0.2 时达到了顶峰，随后快速下降。可以见得，在 Dropout Rate 大小合理时，Dropout 机制能够发挥良好的作用，虽然适度增大了模型的训练难度，然而可以显著缓和过拟合。Dropout Rate 过高时，模型在训练阶段的难度过大，训练不稳定，难以收敛，相同迭代次数内，模型的训练效果遭受了很大的打击。
+
+总而言之，作为重要的超参数，Dropout 需要在训练难度和正则化效果当中进行取舍，需要找到合适的范围才可有利于模型的泛化能力。
+
+## Batch Size
+
+以 MLP learning_rate = 0.001 dropout_rate = 0.0 为基础模型，设置 batch_size = {512, 1024, 2048, 4096}，得到的结果如下图所示：
+
+<div align=center>
+<img width="600" src="./pics/batchsize_train_acc.png"/>
+</div>
+<div align=center>Batch Size Based On MLP Training Accuracy<br/></div>
+
+<div align=center>
+<img width="600" src="./pics/batchsize_train_loss.png"/>
+</div>
+<div align=center>Batch Size Based On MLP Training Loss<br/></div>
+
+<div align=center>
+<img width="600" src="./pics/batchsize_val_acc.png"/>
+</div>
+<div align=center>Batch Size Based On MLP Validation Accuracy<br/></div>
+
+<div align=center>
+<img width="600" src="./pics/batchsize_val_loss.png"/>
+</div>
+<div align=center>Batch Size Based On MLP Validation Loss<br/></div>
+
+在 training set 上，训练效果随着 batch_size 增大而单调降低，而在 validation set 上，训练效果随着 batch_size 先增后减。
+
+对于 batch normalization 而言，增大 batch size 的好处显而易见，毕竟更大的 batch size 能够让每个 batch 内缓存的 average 和 variance 更加接近全局信息，有利于模型的稳定。倘若 validation set 与 training set 的 domain shift 不太显著，更全局的 average 和 variance 也有利于模型在推理过程的表现。
+
+batch size 越大，批次越少，训练时间会更快一点，但可能造成数据的大量浪费，且较大的全局梯度信息容易让模型陷入局部鞍点；而 batch size 越小，能够引入更多随机噪声，对数据的利用越充分，浪费的数据量越少，但批次较大，训练会更耗时。
+
+综上所述，batch size 需要具体问题具体分析，不能单纯考虑对 batch normalization 的加成而一味加大 batch size。
