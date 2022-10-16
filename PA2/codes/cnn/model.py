@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-# import torch
-# from torch import nn
-# from torch.nn.parameter import Parameter
+import torch
+from torch import nn
+from torch.nn.parameter import Parameter
 
 class Config():
     def __init__(self, batch_size=100, hidden_neuron=100, num_epochs=20, learning_rate=1e-5, drop_rate=0.5,  kernel_size1=5, kernel_size2=3, channel1=128, channel2=64,\

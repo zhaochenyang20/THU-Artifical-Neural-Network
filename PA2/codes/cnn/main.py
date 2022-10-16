@@ -30,8 +30,6 @@ parser.add_argument('--train_dir', type=str, default='./train',
                     help='Training directory for saving model. Default: ./train')
 parser.add_argument('--inference_version', type=int, default=0,
                     help='The version for inference. Set 0 to use latest checkpoint. Default: 0')
-parser.add_argument('--inference_version', type=int, default=0,
-                    help='The version for inference. Set 0 to use latest checkpoint. Default: 0')
 parser.add_argument(
         "--without_BatchNorm",
         action="store_true",
