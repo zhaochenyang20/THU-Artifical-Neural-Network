@@ -176,7 +176,7 @@ train loss 与 validation loss 的区别主要有如下原因：
 
 ## Dropout
 
-对于上图所示的 CNN 而言，加入 Dropout 后，模型在 validation 上的表现均优于没有加入 Dropout 的对应模型。而考虑到在 train 上，没有加入 Dropout 的模型相交加入了 Dropout 的模型有着显著的优势。可以见得，Dropout 正则化方法有效地提升了模型的泛化能力，减弱了过拟合现象。
+对于上图所示的 CNN 而言，加入 Dropout 后，模型在 validation 上的表现均优于没有加入 Dropout 的对应模型。而考虑到在 train 上，没有加入 Dropout 的模型相较加入了 Dropout 的模型有着显著的优势。可以见得，Dropout 正则化方法有效地提升了模型的泛化能力，减弱了过拟合现象。
 
 Weight Decay，Bagging，Dropout 都是深度学习中非常主流的正则化方法。为了讨论 Dropout 的优劣，有必要先讨论与 Dropout 有着高度相关性的 Bagging 方法。
 
