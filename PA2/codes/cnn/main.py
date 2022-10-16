@@ -113,7 +113,7 @@ def inference(model, X):  # Test Process
 
 
 if __name__ == '__main__':
-    wandb.init(project="cnn_dropout", entity="eren-zhao", name=f"{batch_size}_{learning_rate}_{drop_rate}_{without_BatchNorm}_{without_dropout}")
+    wandb.init(project="ablation", entity="eren-zhao", name=f"{batch_size}_{learning_rate}_{drop_rate}_{without_BatchNorm}_{without_dropout}")
     wandb.config = {
     "learning_rate": learning_rate,
      "batch_size": batch_size,
@@ -131,7 +131,7 @@ if __name__ == '__main__':
         X_train, X_test, y_train, y_test = load_cifar_4d(args.data_dir)
         X_val, y_val = X_train[40000:], y_train[40000:]
         X_train, y_train = X_train[:40000], y_train[:40000]
-        cnn_model = Model(drop_rate=args.drop_rate, without_BatchNorm=without_BatchNorm, without_dropout=without_dropout)
+        cnn_model = Model(drop_rate=args.drop_rate, without_BatchNorm=without_BatchNorm, without_Dropout=without_dropout)
         cnn_model.to(device)
         print(cnn_model)
         wandb.watch(cnn_model)

@@ -66,7 +66,7 @@ class Dropout(nn.Module):
 
 
 class Model(nn.Module):
-    def __init__(self, drop_rate=0.5, without_BatchNorm=False, without_dropout=False):
+    def __init__(self, drop_rate=0.5, without_BatchNorm=False, without_Dropout=False):
         super(Model, self).__init__()
         # TODO START
         config = Config()
