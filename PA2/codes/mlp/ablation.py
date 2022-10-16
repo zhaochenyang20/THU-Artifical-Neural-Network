@@ -2,7 +2,7 @@ from itertools import product
 import subprocess
 
 def get_all_combinations():
-    batch_sizes = [128]
+    batch_sizes = [1024]
     learning_rates = [0.001]
     drop_rates = [0.2]
     return product(batch_sizes, learning_rates, drop_rates)

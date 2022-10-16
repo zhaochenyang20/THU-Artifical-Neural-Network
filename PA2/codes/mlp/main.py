@@ -31,8 +31,21 @@ parser.add_argument('--train_dir', type=str, default='./train',
                     help='Training directory for saving model. Default: ./train')
 parser.add_argument('--inference_version', type=int, default=0,
                     help='The version for inference. Set 0 to use latest checkpoint. Default: 0')
+parser.add_argument(
+        "--without_BatchNorm",
+        action="store_true",
+        dest="without_BatchNorm",
+        help="if you want to ban BatchNorm, then input --without_BatchNorm, ohterwise do not",
+    )
+parser.add_argument(
+        "--without_dropout",
+        action="store_true",
+        dest="without_dropout",
+        help="if you want to ban dropout, then input --without_dropout, ohterwise do not",
+    )
 args = parser.parse_args()
 batch_size, learning_rate, drop_rate = args.batch_size, args.learning_rate, args.drop_rate
+without_BatchNorm, without_dropout = args.without_BatchNorm, args.without_dropout
 
 def shuffle(X, y, shuffle_parts):
     chunk_size = int(len(X) / shuffle_parts)
@@ -101,7 +114,7 @@ def inference(model, X):  # Test Process
 
 
 if __name__ == '__main__':
-    wandb.init(project="mlp_dropout", entity="eren-zhao", name=f"{batch_size}_{learning_rate}_{drop_rate}")
+    wandb.init(project="cnn_dropout", entity="eren-zhao", name=f"{batch_size}_{learning_rate}_{drop_rate}_{without_BatchNorm}_{without_dropout}")
     wandb.config = {
     "learning_rate": learning_rate,
      "batch_size": batch_size,
@@ -118,7 +131,7 @@ if __name__ == '__main__':
         X_train, X_test, y_train, y_test = load_cifar_2d(args.data_dir)
         X_val, y_val = X_train[40000:], y_train[40000:]
         X_train, y_train = X_train[:40000], y_train[:40000]
-        mlp_model = Model(drop_rate=args.drop_rate)
+        mlp_model = Model(drop_rate=args.drop_rate, without_BatchNorm=without_BatchNorm, without_dropout=without_dropout)
         mlp_model.to(device)
         print(mlp_model)
         wandb.watch(mlp_model)
