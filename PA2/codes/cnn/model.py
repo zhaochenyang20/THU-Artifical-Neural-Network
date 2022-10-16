@@ -1,10 +1,22 @@
 # -*- coding: utf-8 -*-
 import torch
 from torch import nn
-from torch.nn import init
 from torch.nn.parameter import Parameter
-import config
 
+class Config():
+    def __init__(self, batch_size=100, hidden_neuron=100, num_epochs=20, learning_rate=1e-5, drop_rate=0.5,  kernel_size1=5, kernel_size2=3, channel1=128, channel2=64,\
+                 output_feature_channel=2304, max_pool_size=2):
+        self.batch_size = batch_size
+        self.hidden_neuron = hidden_neuron
+        self.num_epochs = num_epochs
+        self.learning_rate = learning_rate
+        self.drop_rate = drop_rate
+        self.kernel_size1 = kernel_size1
+        self.kernel_size2 = kernel_size2
+        self.output_feature_channel = output_feature_channel
+        self.max_pool_size = max_pool_size
+        self.channel1 = channel1
+        self.channel2 = channel2
 
 class BatchNorm2d(nn.Module):
 	# TODO START
@@ -14,6 +26,7 @@ class BatchNorm2d(nn.Module):
 		self.momentum_1 = momentum_1
 		self.momentum_2 = momentum_2
 		self.eposilon = eposilon
+        #! torch.nn.parameter https://zhuanlan.zhihu.com/p/344175147
 		self.weight = Parameter(torch.ones(num_features))
 		self.bias = Parameter(torch.zeros(num_features))
 		self.register_buffer('running_mean', torch.zeros(num_features))
@@ -22,68 +35,98 @@ class BatchNorm2d(nn.Module):
 	def forward(self, input):
 		# input: [batch_size, num_feature_map, height, width]
 		if self.training:
-			miu = input.mean([0, 2, 3])
-			sigma2 = input.var([0, 2, 3])
-			self.running_mean = 0.9 * self.running_mean + 0.1 * miu
-			self.running_var = 0.9 * self.running_var + 0.1 * sigma2
+			mean = input.mean([0, 2, 3])
+			variance = input.var([0, 2, 3])
+			self.running_mean = self.momentum_1 * self.running_mean + (1 -  self.momentum_1) * mean
+			self.running_var = self.momentum_2 * self.running_var + (1 - self.momentum_2) * variance
 		else:
-			miu = self.running_mean
-			sigma2 = self.running_var
-		output = (input - miu[:, None, None]) / torch.sqrt(sigma2[:, None, None] + 1e-5)
-		output = self.weight[:, None, None] * output + self.bias[:, None, None]
-		return output
+			mean = self.running_mean
+			variance = self.running_var
+
+		normalized_input = (input - mean[:, None, None]) / torch.sqrt(variance[:, None, None] + self.eposilon)
+		denormalized_input = self.weight[:, None, None] * normalized_input + self.bias[:, None, None]
+		return denormalized_input
 	# TODO END
 
-class Dropout(nn.Module):
+class Dropout2d(nn.Module):
     # TODO START
     def __init__(self, p=0.5):
-        super(Dropout, self).__init__()
+        super(Dropout2d, self).__init__()
         self.p = p
 
     def forward(self, input):
         # input: [batch_size, num_feature_map, height, width]
         dp = torch.bernoulli(torch.ones(
-            size=(input.shape[0], input.shape[1], 1, 1))*(1-self.p)).to(input.device)
+            size = (input.shape[0], input.shape[1], 1, 1)) * (1 - self.p)).to(input.device)
         if not self.training:
             return input
         else:
-            return dp*input/(1-self.p)
+            return dp * input / (1 - self.p)
     # TODO END
 
+class Dropout1d(nn.Module):
+    # TODO START
+    def __init__(self, p=0.5):
+        super(Dropout1d, self).__init__()
+        self.p = p
+
+    def forward(self, input):
+        # input: [batch_size, num_feature_map, height, width]
+        dp = torch.bernoulli(torch.full(input.shape[: 2], 1 - self.p, device = input.device))\
+            .unsqueeze(dim = -1).unsqueeze(dim = -1)
+        if not self.training:
+            return input
+        else:
+            return dp * input / (1 - self.p)
+    # TODO END
 
 class Model(nn.Module):
-    def __init__(self, drop_rate=0.5):
+    def __init__(self, drop_rate=0.5, without_BatchNorm=False, without_Dropout=False, dropout_type="2d"):
         super(Model, self).__init__()
         # TODO START
+        config = Config()
         # Define your layers here
-        self.model_list_1 = nn.ModuleList([
-            nn.Conv2d(in_channels=3, out_channels=config.channel1,
-                      kernel_size=config.kernel_size1),
-            BatchNorm2d(config.channel1),
-            nn.ReLU(),
-            Dropout(drop_rate),
-            nn.MaxPool2d(config.max_pool_size),
-            nn.Conv2d(in_channels=config.channel1,
-                      out_channels=config.channel2, kernel_size=config.kernel_size2),
-            BatchNorm2d(config.channel2),
-            nn.ReLU(),
-            Dropout(drop_rate),
-            nn.MaxPool2d(config.max_pool_size),
-        ])
-        self.model_list_2 = nn.ModuleList(
-            [nn.Linear(config.output_feature_channel, 10)])
+        if dropout_type == "2d":
+            self.layers = nn.Sequential(
+                nn.Conv2d(in_channels=3, out_channels=config.channel1,
+                        kernel_size=config.kernel_size1),
+                BatchNorm2d(config.channel1) if not without_BatchNorm else nn.Identity(),
+                nn.ReLU(),
+                Dropout2d(drop_rate) if not without_Dropout else nn.Identity(),
+                nn.MaxPool2d(config.max_pool_size),
+                nn.Conv2d(in_channels=config.channel1,
+                        out_channels=config.channel2, kernel_size=config.kernel_size2),
+                BatchNorm2d(config.channel2) if not without_BatchNorm else nn.Identity(),
+                nn.ReLU(),
+                Dropout2d(drop_rate) if not without_Dropout else nn.Identity(),
+                nn.MaxPool2d(config.max_pool_size),
+            )
+            self.classify = nn.Linear(config.output_feature_channel, 10)
+        elif dropout_type == "1d":
+            self.layers = nn.Sequential(
+                nn.Conv2d(in_channels=3, out_channels=config.channel1,
+                        kernel_size=config.kernel_size1),
+                BatchNorm2d(config.channel1) if not without_BatchNorm else nn.Identity(),
+                nn.ReLU(),
+                Dropout1d(drop_rate) if not without_Dropout else nn.Identity(),
+                nn.MaxPool2d(config.max_pool_size),
+                nn.Conv2d(in_channels=config.channel1,
+                        out_channels=config.channel2, kernel_size=config.kernel_size2),
+                BatchNorm2d(config.channel2) if not without_BatchNorm else nn.Identity(),
+                nn.ReLU(),
+                Dropout1d(drop_rate) if not without_Dropout else nn.Identity(),
+                nn.MaxPool2d(config.max_pool_size),
+            )
+            self.classify = nn.Linear(config.output_feature_channel, 10)
         # TODO END
         self.loss = nn.CrossEntropyLoss()
 
     def forward(self, x, y=None):
         # TODO START
         # the 10-class prediction output is named as "logits"
-        for sub_module in self.model_list_1:
-            x = sub_module(x)
+        x = self.layers(x)
         x = x.reshape(x.shape[0], -1)
-        for sub_module in self.model_list_2:
-            x = sub_module(x)
-        logits = x
+        logits = self.classify(x)
         # TODO END
 
         pred = torch.argmax(logits, 1)  # Calculate the prediction result

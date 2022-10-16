@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
-import sys
 import argparse
 import os
 import time
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.optim as optim
 import json
+import wandb
 
 from model import Model
 from load_data import load_cifar_4d
@@ -18,7 +17,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--batch_size', type=int, default=100,
                     help='Batch size for mini-batch training and evaluating. Default: 100')
 parser.add_argument('--num_epochs', type=int, default=50,
-                    help='Number of training epoch. Default: 20')
+                    help='Number of training epoch. Default: 50')
 parser.add_argument('--learning_rate', type=float, default=1e-3,
                     help='Learning rate during optimization. Default: 1e-3')
 parser.add_argument('--drop_rate', type=float, default=0.5,
@@ -31,8 +30,30 @@ parser.add_argument('--train_dir', type=str, default='./train',
                     help='Training directory for saving model. Default: ./train')
 parser.add_argument('--inference_version', type=int, default=0,
                     help='The version for inference. Set 0 to use latest checkpoint. Default: 0')
+parser.add_argument(
+        "--without_BatchNorm",
+        action="store_true",
+        dest="without_BatchNorm",
+        help="if you want to ban BatchNorm, then input --without_BatchNorm, ohterwise do not",
+    )
+parser.add_argument(
+        "--without_dropout",
+        action="store_true",
+        dest="without_dropout",
+        help="if you want to ban dropout, then input --without_dropout, ohterwise do not",
+    )
+parser.add_argument('--dropout_type', type=str, default='2d',
+                    help='which dropout you want to choose, 2d or 1d, default is 2d')
+parser.add_argument(
+        "--ablation_dropout",
+        action="store_true",
+        dest="ablation_dropout",
+        help="if you want to complete dropout_type ablation, then input --ablation_dropout, ohterwise do not",
+    )
 args = parser.parse_args()
-
+batch_size, learning_rate, drop_rate = args.batch_size, args.learning_rate, args.drop_rate
+without_BatchNorm, without_dropout = args.without_BatchNorm, args.without_dropout
+dropout_type, ablation_dropout = args.dropout_type, args.ablation_dropout
 
 def shuffle(X, y, shuffle_parts):
     chunk_size = int(len(X) / shuffle_parts)
@@ -101,6 +122,18 @@ def inference(model, X):  # Test Process
 
 
 if __name__ == '__main__':
+
+    if not ablation_dropout:
+        wandb.init(project="ablation", entity="eren-zhao", name=f"{batch_size}_{learning_rate}_{drop_rate}_{without_BatchNorm}_{without_dropout}")
+    elif ablation_dropout:
+        wandb.init(project="ablation dropout", entity="eren-zhao", name=f"{batch_size}_{learning_rate}_{drop_rate}_{without_BatchNorm}_{without_dropout}_{dropout_type}")
+
+    wandb.config = {
+        "learning_rate": learning_rate,
+        "batch_size": batch_size,
+        "drop_rate": drop_rate
+        }
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_acc_list = []
     train_loss_list = []
@@ -113,34 +146,23 @@ if __name__ == '__main__':
         X_train, X_test, y_train, y_test = load_cifar_4d(args.data_dir)
         X_val, y_val = X_train[40000:], y_train[40000:]
         X_train, y_train = X_train[:40000], y_train[:40000]
-        mlp_model = Model(drop_rate=args.drop_rate)
-        mlp_model.to(device)
-        print(mlp_model)
-        optimizer = optim.Adam(mlp_model.parameters(), lr=args.learning_rate)
-
-        # model_path = os.path.join(args.train_dir, 'checkpoint_%d.pth.tar' % args.inference_version)
-        # if os.path.exists(model_path):
-        # 	mlp_model = torch.load(model_path)
-
+        cnn_model = Model(drop_rate=args.drop_rate, without_BatchNorm=without_BatchNorm, without_Dropout=without_dropout, dropout_type=dropout_type)
+        cnn_model.to(device)
+        print(cnn_model)
+        wandb.watch(cnn_model)
+        optimizer = optim.Adam(cnn_model.parameters(), lr=args.learning_rate)
         pre_losses = [1e18] * 3
         best_val_acc = 0.0
         for epoch in range(1, args.num_epochs+1):
             start_time = time.time()
             train_acc, train_loss = train_epoch(
-                mlp_model, X_train, y_train, optimizer)
+                cnn_model, X_train, y_train, optimizer)
             X_train, y_train = shuffle(X_train, y_train, 1)
-
-            val_acc, val_loss = valid_epoch(mlp_model, X_val, y_val)
-
+            val_acc, val_loss = valid_epoch(cnn_model, X_val, y_val)
             if val_acc >= best_val_acc:
                 best_val_acc = val_acc
                 best_epoch = epoch
-                test_acc, test_loss = valid_epoch(mlp_model, X_test, y_test)
-                # with open(os.path.join(args.train_dir, 'checkpoint_{}.pth.tar'.format(epoch)), 'wb') as fout:
-                # 	torch.save(mlp_model, fout)
-                # with open(os.path.join(args.train_dir, 'checkpoint_0.pth.tar'), 'wb') as fout:
-                # 	torch.save(mlp_model, fout)
-
+                test_acc, test_loss = valid_epoch(cnn_model, X_test, y_test)
             epoch_time = time.time() - start_time
             print("Epoch " + str(epoch) + " of " +
                   str(args.num_epochs) + " took " + str(epoch_time) + "s")
@@ -154,7 +176,14 @@ if __name__ == '__main__':
             print("  best validation accuracy:      " + str(best_val_acc))
             print("  test loss:                     " + str(test_loss))
             print("  test accuracy:                 " + str(test_acc))
-
+            wandb.log({
+                "train_acc": train_acc,
+                "train_loss": train_loss,
+                "val_acc": val_acc,
+                "val_loss": val_loss,
+                "test_acc": test_acc,
+                "test_loss": test_loss,
+            })
             train_acc_list.append(train_acc)
             train_loss_list.append(train_loss)
             val_acc_list.append(val_acc)
@@ -177,19 +206,19 @@ if __name__ == '__main__':
             f.write(f'test loss={test_loss}')
 
     else:
-        mlp_model = Model()
-        mlp_model.to(device)
+        cnn_model = Model()
+        cnn_model.to(device)
         model_path = os.path.join(
             args.train_dir, 'checkpoint_%d.pth.tar' % args.inference_version)
         if os.path.exists(model_path):
-            mlp_model = torch.load(model_path)
+            cnn_model = torch.load(model_path)
 
         X_train, X_test, y_train, y_test = load_cifar_4d(args.data_dir)
 
         count = 0
         for i in range(len(X_test)):
             test_image = X_test[i].reshape((1, 3 * 32 * 32))
-            result = inference(mlp_model, test_image)[0]
+            result = inference(cnn_model, test_image)[0]
             if result == y_test[i]:
                 count += 1
         print("test accuracy: {}".format(float(count) / len(X_test)))

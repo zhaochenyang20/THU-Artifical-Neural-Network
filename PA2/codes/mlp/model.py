@@ -60,6 +60,7 @@ class Dropout(nn.Module):
 	def forward(self, input):
 		# input: [batch_size, num_feature_map * height * width]
 		if self.training:
+			#! 这里和 Lafite 实现也不太一样
 			dropout_distribution = torch.bernoulli(torch.ones_like(input) * (1 - self.p))
 			return input * dropout_distribution / (1 - self.p)
 		else:
@@ -67,23 +68,21 @@ class Dropout(nn.Module):
 	# TODO END
 
 class Model(nn.Module):
-	def __init__(self, drop_rate=0.5):
+	def __init__(self, drop_rate=0.5, without_BatchNorm=False, without_Dropout=False):
 		super(Model, self).__init__()
 		# TODO START
 		# Define your layers here
 		#! nn.Sequential 和 nn.ModuleList 区别
 		config = Config()
 		self.layers = nn.Sequential(
-			[
 				nn.Linear(config.num_features, config.hidden_neuron),
-				BatchNorm1d(config.hidden_neuron),
+				BatchNorm1d(config.hidden_neuron) if not without_BatchNorm else nn.Identity(),
 				#! 一定用 ReLU 吗？
     			nn.ReLU(),
-				Dropout(p = drop_rate),
+				Dropout(p = drop_rate) if not without_Dropout else nn.Identity(),
 				nn.Linear(config.hidden_neuron, config.num_classes),
-			]
 		)
-		# TODO END
+		# TODO ENDgp;
 		self.loss = nn.CrossEntropyLoss()
 
 	def forward(self, x, y=None):
