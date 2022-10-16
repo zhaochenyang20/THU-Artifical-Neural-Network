@@ -42,9 +42,18 @@ parser.add_argument(
         dest="without_dropout",
         help="if you want to ban dropout, then input --without_dropout, ohterwise do not",
     )
+parser.add_argument('--dropout_type', type=str, default='2d',
+                    help='which dropout you want to choose, 2d or 1d, default is 2d')
+parser.add_argument(
+        "--ablation_dropout",
+        action="store_true",
+        dest="ablation_dropout",
+        help="if you want to complete dropout_type ablation, then input --ablation_dropout, ohterwise do not",
+    )
 args = parser.parse_args()
 batch_size, learning_rate, drop_rate = args.batch_size, args.learning_rate, args.drop_rate
 without_BatchNorm, without_dropout = args.without_BatchNorm, args.without_dropout
+dropout_type, ablation_dropout = args.dropout_type, args.ablation_dropout
 
 def shuffle(X, y, shuffle_parts):
     chunk_size = int(len(X) / shuffle_parts)
@@ -113,12 +122,18 @@ def inference(model, X):  # Test Process
 
 
 if __name__ == '__main__':
-    wandb.init(project="ablation", entity="eren-zhao", name=f"{batch_size}_{learning_rate}_{drop_rate}_{without_BatchNorm}_{without_dropout}")
+
+    if not ablation_dropout:
+        wandb.init(project="ablation", entity="eren-zhao", name=f"{batch_size}_{learning_rate}_{drop_rate}_{without_BatchNorm}_{without_dropout}")
+    elif ablation_dropout:
+        wandb.init(project="ablation dropout", entity="eren-zhao", name=f"{batch_size}_{learning_rate}_{drop_rate}_{without_BatchNorm}_{without_dropout}_{dropout_type}")
+
     wandb.config = {
-    "learning_rate": learning_rate,
-     "batch_size": batch_size,
-    "drop_rate": drop_rate
-    }
+        "learning_rate": learning_rate,
+        "batch_size": batch_size,
+        "drop_rate": drop_rate
+        }
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_acc_list = []
     train_loss_list = []
@@ -131,7 +146,7 @@ if __name__ == '__main__':
         X_train, X_test, y_train, y_test = load_cifar_4d(args.data_dir)
         X_val, y_val = X_train[40000:], y_train[40000:]
         X_train, y_train = X_train[:40000], y_train[:40000]
-        cnn_model = Model(drop_rate=args.drop_rate, without_BatchNorm=without_BatchNorm, without_Dropout=without_dropout)
+        cnn_model = Model(drop_rate=args.drop_rate, without_BatchNorm=without_BatchNorm, without_Dropout=without_dropout, dropout_type=dropout_type)
         cnn_model.to(device)
         print(cnn_model)
         wandb.watch(cnn_model)

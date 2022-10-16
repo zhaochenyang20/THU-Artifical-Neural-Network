@@ -48,10 +48,10 @@ class BatchNorm2d(nn.Module):
 		return denormalized_input
 	# TODO END
 
-class Dropout(nn.Module):
+class Dropout2d(nn.Module):
     # TODO START
     def __init__(self, p=0.5):
-        super(Dropout, self).__init__()
+        super(Dropout2d, self).__init__()
         self.p = p
 
     def forward(self, input):
@@ -64,28 +64,60 @@ class Dropout(nn.Module):
             return dp * input / (1 - self.p)
     # TODO END
 
+class Dropout1d(nn.Module):
+    # TODO START
+    def __init__(self, p=0.5):
+        super(Dropout1d, self).__init__()
+        self.p = p
+
+    def forward(self, input):
+        # input: [batch_size, num_feature_map, height, width]
+        dp = torch.bernoulli(torch.full(input.shape[: 2], 1 - self.p, device = input.device))\
+            .unsqueeze(dim = -1).unsqueeze(dim = -1)
+        if not self.training:
+            return input
+        else:
+            return dp * input / (1 - self.p)
+    # TODO END
 
 class Model(nn.Module):
-    def __init__(self, drop_rate=0.5, without_BatchNorm=False, without_Dropout=False):
+    def __init__(self, drop_rate=0.5, without_BatchNorm=False, without_Dropout=False, dropout_type="2d"):
         super(Model, self).__init__()
         # TODO START
         config = Config()
         # Define your layers here
-        self.layers = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=config.channel1,
-                      kernel_size=config.kernel_size1),
-            BatchNorm2d(config.channel1) if not without_BatchNorm else nn.Identity(),
-            nn.ReLU(),
-            Dropout(drop_rate),
-            nn.MaxPool2d(config.max_pool_size),
-            nn.Conv2d(in_channels=config.channel1,
-                      out_channels=config.channel2, kernel_size=config.kernel_size2),
-            BatchNorm2d(config.channel2) if not without_BatchNorm else nn.Identity(),
-            nn.ReLU(),
-            Dropout(drop_rate) if not without_Dropout else nn.Identity(),
-            nn.MaxPool2d(config.max_pool_size),
-        )
-        self.classify = nn.Linear(config.output_feature_channel, 10)
+        if dropout_type == "2d":
+            self.layers = nn.Sequential(
+                nn.Conv2d(in_channels=3, out_channels=config.channel1,
+                        kernel_size=config.kernel_size1),
+                BatchNorm2d(config.channel1) if not without_BatchNorm else nn.Identity(),
+                nn.ReLU(),
+                Dropout2d(drop_rate) if not without_Dropout else nn.Identity(),
+                nn.MaxPool2d(config.max_pool_size),
+                nn.Conv2d(in_channels=config.channel1,
+                        out_channels=config.channel2, kernel_size=config.kernel_size2),
+                BatchNorm2d(config.channel2) if not without_BatchNorm else nn.Identity(),
+                nn.ReLU(),
+                Dropout2d(drop_rate) if not without_Dropout else nn.Identity(),
+                nn.MaxPool2d(config.max_pool_size),
+            )
+            self.classify = nn.Linear(config.output_feature_channel, 10)
+        elif dropout_type == "1d":
+            self.layers = nn.Sequential(
+                nn.Conv2d(in_channels=3, out_channels=config.channel1,
+                        kernel_size=config.kernel_size1),
+                BatchNorm2d(config.channel1) if not without_BatchNorm else nn.Identity(),
+                nn.ReLU(),
+                Dropout1d(drop_rate) if not without_Dropout else nn.Identity(),
+                nn.MaxPool2d(config.max_pool_size),
+                nn.Conv2d(in_channels=config.channel1,
+                        out_channels=config.channel2, kernel_size=config.kernel_size2),
+                BatchNorm2d(config.channel2) if not without_BatchNorm else nn.Identity(),
+                nn.ReLU(),
+                Dropout1d(drop_rate) if not without_Dropout else nn.Identity(),
+                nn.MaxPool2d(config.max_pool_size),
+            )
+            self.classify = nn.Linear(config.output_feature_channel, 10)
         # TODO END
         self.loss = nn.CrossEntropyLoss()
 
