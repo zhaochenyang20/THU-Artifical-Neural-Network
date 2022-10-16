@@ -82,7 +82,7 @@ class Model(nn.Module):
                       out_channels=config.channel2, kernel_size=config.kernel_size2),
             BatchNorm2d(config.channel2) if not without_BatchNorm else nn.Identity(),
             nn.ReLU(),
-            Dropout(drop_rate) if not without_dropout else nn.Identity(),
+            Dropout(drop_rate) if not without_Dropout else nn.Identity(),
             nn.MaxPool2d(config.max_pool_size),
         )
         self.classify = nn.Linear(config.output_feature_channel, 10)
