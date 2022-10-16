@@ -30,8 +30,23 @@ parser.add_argument('--train_dir', type=str, default='./train',
                     help='Training directory for saving model. Default: ./train')
 parser.add_argument('--inference_version', type=int, default=0,
                     help='The version for inference. Set 0 to use latest checkpoint. Default: 0')
+parser.add_argument('--inference_version', type=int, default=0,
+                    help='The version for inference. Set 0 to use latest checkpoint. Default: 0')
+parser.add_argument(
+        "--without_BatchNorm",
+        action="store_true",
+        dest="without_BatchNorm",
+        help="if you want to ban BatchNorm, then input --without_BatchNorm, ohterwise do not",
+    )
+parser.add_argument(
+        "--without_dropout",
+        action="store_true",
+        dest="without_dropout",
+        help="if you want to ban dropout, then input --without_dropout, ohterwise do not",
+    )
 args = parser.parse_args()
 batch_size, learning_rate, drop_rate = args.batch_size, args.learning_rate, args.drop_rate
+without_BatchNorm, without_dropout = args.without_BatchNorm, args.without_dropout
 
 def shuffle(X, y, shuffle_parts):
     chunk_size = int(len(X) / shuffle_parts)
@@ -100,97 +115,98 @@ def inference(model, X):  # Test Process
 
 
 if __name__ == '__main__':
-    wandb.init(project="cnn_dropout", entity="eren-zhao", name=f"{batch_size}_{learning_rate}_{drop_rate}")
-    wandb.config = {
-    "learning_rate": learning_rate,
-     "batch_size": batch_size,
-    "drop_rate": drop_rate
-    }
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    train_acc_list = []
-    train_loss_list = []
-    val_acc_list = []
-    val_loss_list = []
+    print(without_BatchNorm, without_dropout)
+    # wandb.init(project="cnn_dropout", entity="eren-zhao", name=f"{batch_size}_{learning_rate}_{drop_rate}")
+    # wandb.config = {
+    # "learning_rate": learning_rate,
+    #  "batch_size": batch_size,
+    # "drop_rate": drop_rate
+    # }
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # train_acc_list = []
+    # train_loss_list = []
+    # val_acc_list = []
+    # val_loss_list = []
 
-    if not os.path.exists(args.train_dir):
-        os.makedirs(args.train_dir, exist_ok=True)
-    if args.is_train:
-        X_train, X_test, y_train, y_test = load_cifar_4d(args.data_dir)
-        X_val, y_val = X_train[40000:], y_train[40000:]
-        X_train, y_train = X_train[:40000], y_train[:40000]
-        cnn_model = Model(drop_rate=args.drop_rate)
-        cnn_model.to(device)
-        print(cnn_model)
-        wandb.watch(cnn_model)
-        optimizer = optim.Adam(cnn_model.parameters(), lr=args.learning_rate)
-        pre_losses = [1e18] * 3
-        best_val_acc = 0.0
-        for epoch in range(1, args.num_epochs+1):
-            start_time = time.time()
-            train_acc, train_loss = train_epoch(
-                cnn_model, X_train, y_train, optimizer)
-            X_train, y_train = shuffle(X_train, y_train, 1)
-            val_acc, val_loss = valid_epoch(cnn_model, X_val, y_val)
-            if val_acc >= best_val_acc:
-                best_val_acc = val_acc
-                best_epoch = epoch
-                test_acc, test_loss = valid_epoch(cnn_model, X_test, y_test)
-            epoch_time = time.time() - start_time
-            print("Epoch " + str(epoch) + " of " +
-                  str(args.num_epochs) + " took " + str(epoch_time) + "s")
-            print("  learning rate:                 " +
-                  str(optimizer.param_groups[0]['lr']))
-            print("  training loss:                 " + str(train_loss))
-            print("  training accuracy:             " + str(train_acc))
-            print("  validation loss:               " + str(val_loss))
-            print("  validation accuracy:           " + str(val_acc))
-            print("  best epoch:                    " + str(best_epoch))
-            print("  best validation accuracy:      " + str(best_val_acc))
-            print("  test loss:                     " + str(test_loss))
-            print("  test accuracy:                 " + str(test_acc))
-            wandb.log({
-                "train_acc": train_acc,
-                "train_loss": train_loss,
-                "val_acc": val_acc,
-                "val_loss": val_loss,
-                "test_acc": test_acc,
-                "test_loss": test_loss,
-            })
-            train_acc_list.append(train_acc)
-            train_loss_list.append(train_loss)
-            val_acc_list.append(val_acc)
-            val_loss_list.append(val_loss)
+    # if not os.path.exists(args.train_dir):
+    #     os.makedirs(args.train_dir, exist_ok=True)
+    # if args.is_train:
+    #     X_train, X_test, y_train, y_test = load_cifar_4d(args.data_dir)
+    #     X_val, y_val = X_train[40000:], y_train[40000:]
+    #     X_train, y_train = X_train[:40000], y_train[:40000]
+    #     cnn_model = Model(drop_rate=args.drop_rate)
+    #     cnn_model.to(device)
+    #     print(cnn_model)
+    #     wandb.watch(cnn_model)
+    #     optimizer = optim.Adam(cnn_model.parameters(), lr=args.learning_rate)
+    #     pre_losses = [1e18] * 3
+    #     best_val_acc = 0.0
+    #     for epoch in range(1, args.num_epochs+1):
+    #         start_time = time.time()
+    #         train_acc, train_loss = train_epoch(
+    #             cnn_model, X_train, y_train, optimizer)
+    #         X_train, y_train = shuffle(X_train, y_train, 1)
+    #         val_acc, val_loss = valid_epoch(cnn_model, X_val, y_val)
+    #         if val_acc >= best_val_acc:
+    #             best_val_acc = val_acc
+    #             best_epoch = epoch
+    #             test_acc, test_loss = valid_epoch(cnn_model, X_test, y_test)
+    #         epoch_time = time.time() - start_time
+    #         print("Epoch " + str(epoch) + " of " +
+    #               str(args.num_epochs) + " took " + str(epoch_time) + "s")
+    #         print("  learning rate:                 " +
+    #               str(optimizer.param_groups[0]['lr']))
+    #         print("  training loss:                 " + str(train_loss))
+    #         print("  training accuracy:             " + str(train_acc))
+    #         print("  validation loss:               " + str(val_loss))
+    #         print("  validation accuracy:           " + str(val_acc))
+    #         print("  best epoch:                    " + str(best_epoch))
+    #         print("  best validation accuracy:      " + str(best_val_acc))
+    #         print("  test loss:                     " + str(test_loss))
+    #         print("  test accuracy:                 " + str(test_acc))
+    #         wandb.log({
+    #             "train_acc": train_acc,
+    #             "train_loss": train_loss,
+    #             "val_acc": val_acc,
+    #             "val_loss": val_loss,
+    #             "test_acc": test_acc,
+    #             "test_loss": test_loss,
+    #         })
+    #         train_acc_list.append(train_acc)
+    #         train_loss_list.append(train_loss)
+    #         val_acc_list.append(val_acc)
+    #         val_loss_list.append(val_loss)
 
-            if train_loss > max(pre_losses):
-                for param_group in optimizer.param_groups:
-                    param_group['lr'] = param_group['lr'] * 0.9995
-            pre_losses = pre_losses[1:] + [train_loss]
-        with open(os.path.join(args.train_dir, 'train_acc.json'), 'w') as f:
-            json.dump(train_acc_list, f)
-        with open(os.path.join(args.train_dir, 'train_loss.json'), 'w') as f:
-            json.dump(train_loss_list, f)
-        with open(os.path.join(args.train_dir, 'val_acc.json'), 'w') as f:
-            json.dump(val_acc_list, f)
-        with open(os.path.join(args.train_dir, 'val_loss.json'), 'w') as f:
-            json.dump(val_loss_list, f)
-        with open(os.path.join(args.train_dir, 'test_result.txt'), 'w') as f:
-            f.write(f'test acc={test_acc}\n')
-            f.write(f'test loss={test_loss}')
+    #         if train_loss > max(pre_losses):
+    #             for param_group in optimizer.param_groups:
+    #                 param_group['lr'] = param_group['lr'] * 0.9995
+    #         pre_losses = pre_losses[1:] + [train_loss]
+    #     with open(os.path.join(args.train_dir, 'train_acc.json'), 'w') as f:
+    #         json.dump(train_acc_list, f)
+    #     with open(os.path.join(args.train_dir, 'train_loss.json'), 'w') as f:
+    #         json.dump(train_loss_list, f)
+    #     with open(os.path.join(args.train_dir, 'val_acc.json'), 'w') as f:
+    #         json.dump(val_acc_list, f)
+    #     with open(os.path.join(args.train_dir, 'val_loss.json'), 'w') as f:
+    #         json.dump(val_loss_list, f)
+    #     with open(os.path.join(args.train_dir, 'test_result.txt'), 'w') as f:
+    #         f.write(f'test acc={test_acc}\n')
+    #         f.write(f'test loss={test_loss}')
 
-    else:
-        cnn_model = Model()
-        cnn_model.to(device)
-        model_path = os.path.join(
-            args.train_dir, 'checkpoint_%d.pth.tar' % args.inference_version)
-        if os.path.exists(model_path):
-            cnn_model = torch.load(model_path)
+    # else:
+    #     cnn_model = Model()
+    #     cnn_model.to(device)
+    #     model_path = os.path.join(
+    #         args.train_dir, 'checkpoint_%d.pth.tar' % args.inference_version)
+    #     if os.path.exists(model_path):
+    #         cnn_model = torch.load(model_path)
 
-        X_train, X_test, y_train, y_test = load_cifar_4d(args.data_dir)
+    #     X_train, X_test, y_train, y_test = load_cifar_4d(args.data_dir)
 
-        count = 0
-        for i in range(len(X_test)):
-            test_image = X_test[i].reshape((1, 3 * 32 * 32))
-            result = inference(cnn_model, test_image)[0]
-            if result == y_test[i]:
-                count += 1
-        print("test accuracy: {}".format(float(count) / len(X_test)))
+    #     count = 0
+    #     for i in range(len(X_test)):
+    #         test_image = X_test[i].reshape((1, 3 * 32 * 32))
+    #         result = inference(cnn_model, test_image)[0]
+    #         if result == y_test[i]:
+    #             count += 1
+    #     print("test accuracy: {}".format(float(count) / len(X_test)))

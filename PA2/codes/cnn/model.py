@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-import torch
-from torch import nn
-from torch.nn.parameter import Parameter
+# import torch
+# from torch import nn
+# from torch.nn.parameter import Parameter
 
 class Config():
     def __init__(self, batch_size=100, hidden_neuron=100, num_epochs=20, learning_rate=1e-5, drop_rate=0.5,  kernel_size1=5, kernel_size2=3, channel1=128, channel2=64,\
@@ -66,7 +66,7 @@ class Dropout(nn.Module):
 
 
 class Model(nn.Module):
-    def __init__(self, drop_rate=0.5):
+    def __init__(self, drop_rate=0.5, without_BatchNorm=False, without_dropout=False):
         super(Model, self).__init__()
         # TODO START
         config = Config()
@@ -74,15 +74,15 @@ class Model(nn.Module):
         self.layers = nn.Sequential(
             nn.Conv2d(in_channels=3, out_channels=config.channel1,
                       kernel_size=config.kernel_size1),
-            BatchNorm2d(config.channel1),
+            BatchNorm2d(config.channel1) if not without_BatchNorm else nn.Identity(),
             nn.ReLU(),
             Dropout(drop_rate),
             nn.MaxPool2d(config.max_pool_size),
             nn.Conv2d(in_channels=config.channel1,
                       out_channels=config.channel2, kernel_size=config.kernel_size2),
-            BatchNorm2d(config.channel2),
+            BatchNorm2d(config.channel2) if not without_BatchNorm else nn.Identity(),
             nn.ReLU(),
-            Dropout(drop_rate),
+            Dropout(drop_rate) if not without_dropout else nn.Identity(),
             nn.MaxPool2d(config.max_pool_size),
         )
         self.classify = nn.Linear(config.output_feature_channel, 10)
