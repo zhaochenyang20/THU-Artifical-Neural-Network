@@ -9,8 +9,8 @@ def get_all_combinations():
 
 def pipeline():
     for batch_size, learning_rate, drop_rate in get_all_combinations():
-        subprocess.run(f"python3 main.py --batch_size {batch_size} --learning_rate {learning_rate} --drop_rate {drop_rate} ----dropout_type 1d --ablation_dropout", shell=True)
-        subprocess.run(f"python3 main.py --batch_size {batch_size} --learning_rate {learning_rate} --drop_rate {drop_rate} ----dropout_type 2d --ablation_dropout", shell=True)
+        subprocess.run(f"python3 main.py --batch_size {batch_size} --learning_rate {learning_rate} --drop_rate {drop_rate} --dropout_type 1d --ablation_dropout", shell=True)
+        subprocess.run(f"python3 main.py --batch_size {batch_size} --learning_rate {learning_rate} --drop_rate {drop_rate} --dropout_type 2d --ablation_dropout", shell=True)
         subprocess.run(f"python3 main.py --batch_size {batch_size} --learning_rate {learning_rate} --drop_rate {drop_rate}", shell=True)
         subprocess.run(f"python3 main.py --batch_size {batch_size} --learning_rate {learning_rate} --drop_rate {drop_rate} --without_BatchNorm", shell=True)
         subprocess.run(f"python3 main.py --batch_size {batch_size} --learning_rate {learning_rate} --drop_rate {drop_rate} --without_dropout", shell=True)
