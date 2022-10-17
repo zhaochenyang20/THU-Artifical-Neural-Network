@@ -4,11 +4,11 @@
 
 赵晨阳 2020012363 计 06
 
-## How `self.training` Work
+## How Do  `self.training` Work
 
 对于学习任务而言，显然训练逻辑与推理逻辑是不同。例如训练时可能会根据 loss 计算梯度，而后回传梯度，参数下降；然而做推理时，大多不需要再修改参数。又比如，`BatchNormalize` 方法需要在训练时利用累计的方法来近似全局的 `average` 和 `variance`，而推理时，这两个参数需要固定，不能再变动。因此，区分训练与否是非常重要的。
 
-具体到 `torch` 而言，`torch.nn,Module` 以及其子类都有成员变量 `self.training`，加以显示地区分是否为训练。此外，还有两个成员函数 `self.train()` 和 `self.eval()` 作为 hook，将模型的各个部分的 `self.training` 设置为 `True / False`。
+具体到 `torch` 而言，`torch.nn.Module` 以及其子类都有成员变量 `self.training`，加以显示地区分是否为训练。此外，还有两个成员函数 `self.train()` 和 `self.eval()` 作为 hook，将模型的各个部分的 `self.training` 设置为 `True / False`。
 
 ## 训练效果
 
@@ -89,7 +89,7 @@ train loss 与 validation loss 的区别主要有如下原因：
 1. 训练集与验证集的分布有所偏差，对于训练集较好的拟合在验证集上可能效果降低。
 2. 在训练后期，不加以正则化的模型容易陷入过拟合状态，模型的泛化性降低，在验证集上表现不佳。
 
-基于对 train loss 和 validation loss 的同时检测，能够有效地帮助我们调整超参数。譬如假设出现了非常明显的过拟合现象，一来可以及时切断训练，提高 weight decay 等惩罚参数，二来可以降低 epoch 数目和 learning rate，寻求模型更好的驻点。
+基于对 train loss 和 validation loss 的同时检测，能够有效地帮助我们调整超参数。譬如假设出现了非常明显的过拟合现象，一来可以及时切断训练，二来可以提高 weight decay 等惩罚参数，降低 epoch 数目和 learning rate，寻求模型更好的驻点。
 
 ## 模型对比
 
@@ -113,13 +113,11 @@ train loss 与 validation loss 的区别主要有如下原因：
 </div>
 <div align=center>MLP Test Accuracy<br/></div>
 
-在 test set 上，CNN 最高 `test_acc` 为 0.7397，最低  `test_loss` 为 0.7902；MLP 最高 `test_acc` 为 0.524，最低 `test_loss` 为 1.367。在 validation set 上，CNN 模型的最高 `val_acc` 为 0.7366，最低 `val_loss` 为 0.7926；MLP 模型最高 `val_acc` 为 0.5197 ，最低 `val_loss` 为 1.400。
+在 test set 上，CNN 最高 `test_acc` 为 0.7397，最低  `test_loss` 为 0.7902；MLP 最高 `test_acc` 为 0.524，最低 `test_loss` 为 1.367；由此见得，CNN 显著优于 MLP。
 
-由此见得，CNN 显著优于 MLP。
+不考虑视觉的先验经验时， CNN 仅仅是共享了参数的 MLP，计算复杂度更高，而参数更少，相对而言表达力似乎更低。然而，在视觉相关问题上，CNN 有着强大的视觉先验经验。在视觉任务上的效果远超 MLP。
 
-实际上，不考虑视觉的先验经验时， CNN 仅仅是共享了参数的 MLP，计算复杂度更高，而参数更少，相对而言表达力似乎更低。然而，在视觉相关问题上，CNN 有着强大的视觉先验经验。在视觉任务上的效果远超 MLP。
-
-实际上，CNN 模型模拟了人类的视觉直觉，人眼对于图像的理解便是从微观到全局，从高频到低频，且全过程保持着二维（乃至三维）信息的传导。通过从 low-level 到 high-level 的 feature 传递，CNN 高度利用了人眼对于图像的理解机制，可以充分利用图像上相近像素间的关系，而像素间的相互关系在 self attention 当中有着更深入的展现。MLP 将高维的图像展开为一维，导致其显式丢失了图像高维的相互信息。此外，CNN 模型通过参数共享和 pooling 机制，使其具有一定的平移不变性，也提高了 CNN 在视觉任务上的泛化能力。
+实际上，CNN 模型模拟了人类的视觉直觉；人眼对于图像的理解便是从微观到全局，从高频到低频，且全过程保持着二维（乃至三维）信息的传导。通过从 low-level 到 high-level 的 feature 传递，CNN 高度利用了人眼对于图像的理解机制，可以充分利用图像上相近像素间的关系，而像素间的相互关系在 self attention 当中有着更深入的展现。MLP 将高维的图像展开为一维，导致其显式丢失了图像高维的相互信息。此外，CNN 模型通过参数共享和 pooling 机制，使其具有一定的平移不变性，也提高了 CNN 在视觉任务上的泛化能力。
 
 总归，模型的表现有模型的容量和任务适应性共同决定。在视觉任务上，CNN 惊艳的效果众所周知，在本次实验中训练效果强于 MLP 不足为奇。
 
@@ -134,7 +132,7 @@ train loss 与 validation loss 的区别主要有如下原因：
 
 每条曲线参数命名规则为 `{batch_size}_{learning_rate}_{drop_rate}_{without_BatchNorm}_{without_dropout}`
 
-，也即如果不使用 BatchNorm，则参数第四项将为 True，使用了 BatchNorm 第四项则为 False，Dropout 同理。此外，以 128 开头的实验是 CNN 模型的 ablation study，而 1024 开头的实验为 MLP 模型的 ablation study。
+注意，如果不使用 BatchNorm，则参数第四项将为 True，使用了 BatchNorm 第四项则为 False，Dropout 同理。此外，以 128 开头的实验是 CNN 模型的 ablation study，而 1024 开头的实验为 MLP 模型的 ablation study。
 
 <div align=center>
 <img width="600" src="./pics/MLP_ablation_train_acc.png"/>
@@ -180,7 +178,7 @@ train loss 与 validation loss 的区别主要有如下原因：
 
 对于上图所示的 CNN 而言，加入 Dropout 后，模型在 validation 上的表现均优于没有加入 Dropout 的对应模型。而考虑到在 train 上，没有加入 Dropout 的模型相较加入了 Dropout 的模型有着显著的优势。可以见得，Dropout 正则化方法有效地提升了模型的泛化能力，显著减弱了过拟合现象。
 
-Weight Decay，Bagging，Dropout 都是深度学习中非常主流的正则化方法。为了讨论 Dropout 的优劣，有必要先讨论与 Dropout 有着高度相关性的 Bagging 方法。
+BatchNormalize，Weight Decay，Bagging，Dropout 都是深度学习中非常主流的正则化方法。为了讨论 Dropout 的优劣，有必要先讨论与 Dropout 有着高度相关性的 Bagging 方法。
 
 ### Bagging 与集成方法
 
@@ -190,7 +188,7 @@ Weight Decay，Bagging，Dropout 都是深度学习中非常主流的正则化�
 $$
 \begin{aligned}
 \mathbb{E}\left[\left(\frac{1}{k} \sum_i \epsilon_i\right)^2\right] &=\frac{1}{k^2} \mathbb{E}\left[\sum_i\left(\epsilon_i^2+\sum_{j \neq i} \epsilon_i \epsilon_j\right)\right] \\
-&=\frac{1}{k} v+\frac{k-1}{k} c .
+&=\frac{1}{k} v+\frac{k-1}{k} c
 \end{aligned}
 $$
 在误差完全相关即 $c=v$ 的情况下，均方误差减少到 $v$，所以模型平均没有任何帮助。但是，在错误完全不相关，即 $c=0$ 的情况下，该集成平方误差的期望仅为 $\frac{1}{k} v$​ 。这意味着集成平方误差的期望会随着集成规模增大而线性减小。换言之，集成至少与它的任何成员表现得一样好，并且如果成员的误差是独立的，集成将显著地比其成员表现得更好。

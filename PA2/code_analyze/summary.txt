@@ -1,0 +1,484 @@
+########################
+# Additional Files
+########################
+# train
+# pipeline.py
+# ablation.py
+# dropout_test.py
+
+########################
+# Filled Code
+########################
+# ../codes/cnn/model.py:1
+    def __init__(self, num_features, momentum_1=0.8, momentum_2=0.9, eposilon=1e-5):
+        self.momentum_1 = momentum_1
+        self.momentum_2 = momentum_2
+        self.eposilon = eposilon
+        #! torch.nn.parameter https://zhuanlan.zhihu.com/p/344175147
+        self.weight = Parameter(torch.ones(num_features))
+        self.bias = Parameter(torch.zeros(num_features))
+        self.register_buffer('running_mean', torch.zeros(num_features))
+        self.register_buffer('running_var', torch.ones(num_features))
+        # input: [batch_size, num_feature_map, height, width]
+        if self.training:
+            mean = input.mean([0, 2, 3])
+            variance = input.var([0, 2, 3])
+            self.running_mean = self.momentum_1 * self.running_mean + (1 -  self.momentum_1) * mean
+            self.running_var = self.momentum_2 * self.running_var + (1 - self.momentum_2) * variance
+        else:
+            mean = self.running_mean
+            variance = self.running_var
+
+        normalized_input = (input - mean[:, None, None]) / torch.sqrt(variance[:, None, None] + self.eposilon)
+        denormalized_input = self.weight[:, None, None] * normalized_input + self.bias[:, None, None]
+        return denormalized_input
+
+# ../codes/cnn/model.py:2
+        super(Dropout2d, self).__init__()
+        # input: [batch_size, num_feature_map, height, width]
+        dp = torch.bernoulli(torch.ones(
+            size = (input.shape[0], input.shape[1], 1, 1)) * (1 - self.p)).to(input.device)
+        if not self.training:
+            return input
+        else:
+            return dp * input / (1 - self.p)
+
+# ../codes/cnn/model.py:3
+        config = Config()
+        if dropout_type == "2d":
+            self.layers = nn.Sequential(
+                nn.Conv2d(in_channels=3, out_channels=config.channel1,
+                        kernel_size=config.kernel_size1),
+                BatchNorm2d(config.channel1) if not without_BatchNorm else nn.Identity(),
+                nn.ReLU(),
+                Dropout2d(drop_rate) if not without_Dropout else nn.Identity(),
+                nn.MaxPool2d(config.max_pool_size),
+                nn.Conv2d(in_channels=config.channel1,
+                        out_channels=config.channel2, kernel_size=config.kernel_size2),
+                BatchNorm2d(config.channel2) if not without_BatchNorm else nn.Identity(),
+                nn.ReLU(),
+                Dropout2d(drop_rate) if not without_Dropout else nn.Identity(),
+                nn.MaxPool2d(config.max_pool_size),
+            )
+            self.classify = nn.Linear(config.output_feature_channel, 10)
+        elif dropout_type == "1d":
+            self.layers = nn.Sequential(
+                nn.Conv2d(in_channels=3, out_channels=config.channel1,
+                        kernel_size=config.kernel_size1),
+                BatchNorm2d(config.channel1) if not without_BatchNorm else nn.Identity(),
+                nn.ReLU(),
+                Dropout1d(drop_rate) if not without_Dropout else nn.Identity(),
+                nn.MaxPool2d(config.max_pool_size),
+                nn.Conv2d(in_channels=config.channel1,
+                        out_channels=config.channel2, kernel_size=config.kernel_size2),
+                BatchNorm2d(config.channel2) if not without_BatchNorm else nn.Identity(),
+                nn.ReLU(),
+                Dropout1d(drop_rate) if not without_Dropout else nn.Identity(),
+                nn.MaxPool2d(config.max_pool_size),
+            )
+            self.classify = nn.Linear(config.output_feature_channel, 10)
+
+# ../codes/cnn/model.py:4
+        x = self.layers(x)
+        x = x.reshape(x.shape[0], -1)
+        logits = self.classify(x)
+
+# ../codes/mlp/model.py:1
+    def __init__(self, num_features, momentum_1=0.8, momentum_2=0.9, eposilon=1e-5):
+        self.momentum_1 = momentum_1
+        self.momentum_2 = momentum_2
+        self.eposilon = eposilon
+        #! different torch.ones 的参数
+        self.weight = Parameter(torch.ones(num_features))
+        self.bias = Parameter(torch.zeros(num_features))
+        #! register_buffer 的作用是什么，running_mean 和 running_var 的意义
+        self.register_buffer('running_mean', torch.zeros(num_features))
+        self.register_buffer('running_var', torch.ones(num_features))
+
+        #! TODO 为什么是 training 不是 train
+  		#! 这里我用的是 torch 的 mean 和 variance
+        #! 仅在训练时候更新 buffer，测试时直接用 buffer 即可
+        if self.training:
+            average, variance = torch.mean(input, dim=0), torch.var(input, dim=0)
+            self.running_mean = self.momentum_1 * self.running_mean + (1 - self.momentum_1) * average
+            self.running_var = self.momentum_2 * self.running_var + (1 - self.momentum_2) * variance
+        else:
+            average, variance = self.running_mean, self.running_var
+
+        normalized_input = (input - average) / torch.sqrt(variance + self.eposilon) * self.weight + self.bias
+        return normalized_input
+
+# ../codes/mlp/model.py:2
+        if self.training:
+            dropout_distribution = torch.bernoulli(torch.ones_like(input) * (1 - self.p))
+            return input * dropout_distribution / (1 - self.p)
+        else:
+            return input
+
+# ../codes/mlp/model.py:3
+        #! nn.Sequential 和 nn.ModuleList 区别
+        config = Config()
+        self.layers = nn.Sequential(
+                nn.Linear(config.num_features, config.hidden_neuron),
+                BatchNorm1d(config.hidden_neuron) if not without_BatchNorm else nn.Identity(),
+                #! 一定用 ReLU 吗？
+    			nn.ReLU(),
+                Dropout(p = drop_rate) if not without_Dropout else nn.Identity(),
+                nn.Linear(config.hidden_neuron, config.num_classes),
+        )
+
+# ../codes/mlp/model.py:4
+        logits = self.layers(x)
+
+
+########################
+# References
+########################
+
+########################
+# Other Modifications
+########################
+# _codes/cnn/model.py -> ../codes/cnn/model.py
+# 2 -
+# 5 - from torch.nn import init
+# 5 +
+# 6 + class Config():
+# 7 +     def __init__(self, batch_size=100, hidden_neuron=100, num_epochs=20, learning_rate=1e-5, drop_rate=0.5,  kernel_size1=5, kernel_size2=3, channel1=128, channel2=64,\
+# 8 +                  output_feature_channel=2304, max_pool_size=2):
+# 9 +         self.batch_size = batch_size
+# 10 +         self.hidden_neuron = hidden_neuron
+# 11 +         self.num_epochs = num_epochs
+# 12 +         self.learning_rate = learning_rate
+# 13 +         self.drop_rate = drop_rate
+# 14 +         self.kernel_size1 = kernel_size1
+# 15 +         self.kernel_size2 = kernel_size2
+# 16 +         self.output_feature_channel = output_feature_channel
+# 17 +         self.max_pool_size = max_pool_size
+# 18 +         self.channel1 = channel1
+# 19 +         self.channel2 = channel2
+# 20 +
+# 28 - class Dropout(nn.Module):
+# 51 + class Dropout2d(nn.Module):
+# 51 ?              ++
+# 66 +
+# 67 + class Dropout1d(nn.Module):
+# 40 -     def __init__(self, drop_rate=0.5):
+# 84 +     def __init__(self, drop_rate=0.5, without_BatchNorm=False, without_Dropout=False, dropout_type="2d"):
+# 58 -         acc = torch.mean(correct_pred.float())  # Calculate the accuracy in this mini-batch
+# 137 +         # Calculate the accuracy in this mini-batch
+# 138 +         acc = torch.mean(correct_pred.float())
+# 60 -         return loss, acc
+# 60 ?                         -
+# 140 +         return loss, acc
+# _codes/cnn/main.py -> ../codes/cnn/main.py
+# 2 - import sys
+# 9 - import torch.nn as nn
+# 9 + import json
+# 10 + import wandb
+# 18 -     help='Batch size for mini-batch training and evaluating. Default: 100')
+# 18 +                     help='Batch size for mini-batch training and evaluating. Default: 100')
+# 18 ? ++++++++++++++++
+# 19 - parser.add_argument('--num_epochs', type=int, default=20,
+# 19 ?                                                       ^
+# 19 + parser.add_argument('--num_epochs', type=int, default=50,
+# 19 ?                                                       ^
+# 20 -     help='Number of training epoch. Default: 20')
+# 20 ?                                              ^
+# 20 +                     help='Number of training epoch. Default: 50')
+# 20 ? ++++++++++++++++                                             ^
+# 22 -     help='Learning rate during optimization. Default: 1e-3')
+# 22 +                     help='Learning rate during optimization. Default: 1e-3')
+# 22 ? ++++++++++++++++
+# 24 -     help='Drop rate of the Dropout Layer. Default: 0.5')
+# 24 +                     help='Drop rate of the Dropout Layer. Default: 0.5')
+# 24 ? ++++++++++++++++
+# 26 -     help='True to train and False to inference. Default: True')
+# 26 +                     help='True to train and False to inference. Default: True')
+# 26 ? ++++++++++++++++
+# 27 - parser.add_argument('--data_dir', type=str, default='../cifar-10_data',
+# 27 ?                                                      ^^
+# 27 + parser.add_argument('--data_dir', type=str, default='/home/helehan/桌面/cifar-10_data',
+# 27 ?                                                      ^^^^^^^^^^^^^^^^
+# 28 -     help='Data directory. Default: ../cifar-10_data')
+# 28 +                     help='Data directory. Default: ../cifar-10_data')
+# 28 ? ++++++++++++++++
+# 30 -     help='Training directory for saving model. Default: ./train')
+# 30 +                     help='Training directory for saving model. Default: ./train')
+# 30 ? ++++++++++++++++
+# 32 -     help='The version for inference. Set 0 to use latest checkpoint. Default: 0')
+# 32 +                     help='The version for inference. Set 0 to use latest checkpoint. Default: 0')
+# 32 ? ++++++++++++++++
+# 33 + parser.add_argument(
+# 34 +         "--without_BatchNorm",
+# 35 +         action="store_true",
+# 36 +         dest="without_BatchNorm",
+# 37 +         help="if you want to ban BatchNorm, then input --without_BatchNorm, ohterwise do not",
+# 38 +     )
+# 39 + parser.add_argument(
+# 40 +         "--without_dropout",
+# 41 +         action="store_true",
+# 42 +         dest="without_dropout",
+# 43 +         help="if you want to ban dropout, then input --without_dropout, ohterwise do not",
+# 44 +     )
+# 45 + parser.add_argument('--dropout_type', type=str, default='2d',
+# 46 +                     help='which dropout you want to choose, 2d or 1d, default is 2d')
+# 47 + parser.add_argument(
+# 48 +         "--ablation_dropout",
+# 49 +         action="store_true",
+# 50 +         dest="ablation_dropout",
+# 51 +         help="if you want to complete dropout_type ablation, then input --ablation_dropout, ohterwise do not",
+# 52 +     )
+# 34 -
+# 54 + batch_size, learning_rate, drop_rate = args.batch_size, args.learning_rate, args.drop_rate
+# 55 + without_BatchNorm, without_dropout = args.without_BatchNorm, args.without_dropout
+# 56 + dropout_type, ablation_dropout = args.dropout_type, args.ablation_dropout
+# 55 - def train_epoch(model, X, y, optimizer): # Training Process
+# 77 + def train_epoch(model, X, y, optimizer):  # Training Process
+# 77 ?                                          +
+# 61 -         X_batch, y_batch = torch.from_numpy(X[st:ed]).to(device), torch.from_numpy(y[st:ed]).to(device)
+# 83 +         X_batch, y_batch = torch.from_numpy(X[st:ed]).to(
+# 84 +             device), torch.from_numpy(y[st:ed]).to(device)
+# 76 - def valid_epoch(model, X, y): # Valid Process
+# 99 + def valid_epoch(model, X, y):  # Valid Process
+# 99 ?                               +
+# 81 -         X_batch, y_batch = torch.from_numpy(X[st:ed]).to(device), torch.from_numpy(y[st:ed]).to(device)
+# 104 +         X_batch, y_batch = torch.from_numpy(X[st:ed]).to(
+# 105 +             device), torch.from_numpy(y[st:ed]).to(device)
+# 94 - def inference(model, X): # Test Process
+# 118 + def inference(model, X):  # Test Process
+# 118 ?                          +
+# 125 +
+# 126 +     if not ablation_dropout:
+# 127 +         wandb.init(project="ablation", entity="eren-zhao", name=f"{batch_size}_{learning_rate}_{drop_rate}_{without_BatchNorm}_{without_dropout}")
+# 128 +     elif ablation_dropout:
+# 129 +         wandb.init(project="ablation dropout", entity="eren-zhao", name=f"{batch_size}_{learning_rate}_{drop_rate}_{without_BatchNorm}_{without_dropout}_{dropout_type}")
+# 130 +
+# 131 +     wandb.config = {
+# 132 +         "learning_rate": learning_rate,
+# 133 +         "batch_size": batch_size,
+# 134 +         "drop_rate": drop_rate
+# 135 +         }
+# 136 +
+# 138 +     train_acc_list = []
+# 139 +     train_loss_list = []
+# 140 +     val_acc_list = []
+# 141 +     val_loss_list = []
+# 142 +
+# 103 -         os.mkdir(args.train_dir)
+# 144 +         os.makedirs(args.train_dir, exist_ok=True)
+# 144 ?             + +   +               +++++++++++++++
+# 108 -         cnn_model = Model(drop_rate=args.drop_rate)
+# 149 +         cnn_model = Model(drop_rate=args.drop_rate, without_BatchNorm=without_BatchNorm, without_Dropout=without_dropout, dropout_type=dropout_type)
+# 152 +         wandb.watch(cnn_model)
+# 112 -
+# 113 -         # model_path = os.path.join(args.train_dir, 'checkpoint_%d.pth.tar' % args.inference_version)
+# 114 -         # if os.path.exists(model_path):
+# 115 -         # 	cnn_model = torch.load(model_path)
+# 116 -
+# 158 +             train_acc, train_loss = train_epoch(
+# 121 -             train_acc, train_loss = train_epoch(cnn_model, X_train, y_train, optimizer)
+# 121 ?             ---------- ---------- - ^^^^^^^^^^^^
+# 159 +                 cnn_model, X_train, y_train, optimizer)
+# 159 ?                ^
+# 123 -
+# 125 -
+# 130 -                 with open(os.path.join(args.train_dir, 'checkpoint_{}.pth.tar'.format(epoch)), 'wb') as fout:
+# 131 -                     torch.save(cnn_model, fout)
+# 132 -                 with open(os.path.join(args.train_dir, 'checkpoint_0.pth.tar'), 'wb') as fout:
+# 133 -                     torch.save(cnn_model, fout)
+# 134 -
+# 167 +             print("Epoch " + str(epoch) + " of " +
+# 136 -             print("Epoch " + str(epoch) + " of " + str(args.num_epochs) + " took " + str(epoch_time) + "s")
+# 136 ?             ------------ - - ---------- - --------
+# 168 +                   str(args.num_epochs) + " took " + str(epoch_time) + "s")
+# 137 -             print("  learning rate:                 " + str(optimizer.param_groups[0]['lr']))
+# 169 +             print("  learning rate:                 " +
+# 170 +                   str(optimizer.param_groups[0]['lr']))
+# 179 +             wandb.log({
+# 180 +                 "train_acc": train_acc,
+# 181 +                 "train_loss": train_loss,
+# 182 +                 "val_acc": val_acc,
+# 183 +                 "val_loss": val_loss,
+# 184 +                 "test_acc": test_acc,
+# 185 +                 "test_loss": test_loss,
+# 186 +             })
+# 187 +             train_acc_list.append(train_acc)
+# 188 +             train_loss_list.append(train_loss)
+# 189 +             val_acc_list.append(val_acc)
+# 190 +             val_loss_list.append(val_loss)
+# 196 +         with open(os.path.join(args.train_dir, 'train_acc.json'), 'w') as f:
+# 197 +             json.dump(train_acc_list, f)
+# 198 +         with open(os.path.join(args.train_dir, 'train_loss.json'), 'w') as f:
+# 199 +             json.dump(train_loss_list, f)
+# 200 +         with open(os.path.join(args.train_dir, 'val_acc.json'), 'w') as f:
+# 201 +             json.dump(val_acc_list, f)
+# 202 +         with open(os.path.join(args.train_dir, 'val_loss.json'), 'w') as f:
+# 203 +             json.dump(val_loss_list, f)
+# 204 +         with open(os.path.join(args.train_dir, 'test_result.txt'), 'w') as f:
+# 205 +             f.write(f'test acc={test_acc}\n')
+# 206 +             f.write(f'test loss={test_loss}')
+# 153 -         print("begin testing")
+# 211 +         model_path = os.path.join(
+# 156 -         model_path = os.path.join(args.train_dir, 'checkpoint_%d.pth.tar' % args.inference_version)
+# 156 ?         ---------- - ^^^^^^^^^^^^^
+# 212 +             args.train_dir, 'checkpoint_%d.pth.tar' % args.inference_version)
+# 212 ?           ^^
+# 164 -             test_image = X_test[i].reshape((1, 3, 32, 32))
+# 164 ?                                                 ^   ^
+# 220 +             test_image = X_test[i].reshape((1, 3 * 32 * 32))
+# 220 ?                                                 ^^   ^^
+# _codes/mlp/model.py -> ../codes/mlp/model.py
+# 1 - # -*- coding: utf-8 -*-
+# 2 -
+# 5 - from torch.nn import init
+# 4 +
+# 5 +
+# 6 + class Config():
+# 7 +     def __init__(self, batch_size=100, hidden_neuron=100, num_epochs=20, learning_rate=1e-5, drop_rate=0.5, \
+# 8 +      ):
+# 9 +         self.batch_size = batch_size
+# 10 +         self.hidden_neuron = hidden_neuron
+# 11 +         self.num_epochs = num_epochs
+# 12 +         self.learning_rate = learning_rate
+# 13 +         self.drop_rate = drop_rate
+# 14 +         self.num_classes = 10
+# 15 +         self.num_features = 3072
+# 16 +
+# 40 -     def __init__(self, drop_rate=0.5):
+# 70 +     def __init__(self, drop_rate=0.5, without_BatchNorm=False, without_Dropout=False):
+# 60 -         return loss, acc
+# 60 ?                         -
+# 100 +         return loss, acc
+# _codes/mlp/main.py -> ../codes/mlp/main.py
+# 9 - import torch.nn as nn
+# 10 + import json
+# 14 + import wandb
+# 17 - parser.add_argument('--batch_size', type=int, default=100,
+# 17 ?                                                       ^ ^
+# 18 + parser.add_argument('--batch_size', type=int, default=4096,
+# 18 ?                                                       ^ ^^
+# 18 -     help='Batch size for mini-batch training and evaluating. Default: 100')
+# 19 +                     help='Batch size for mini-batch training and evaluating. Default: 100')
+# 19 ? ++++++++++++++++
+# 20 -     help='Number of training epoch. Default: 20')
+# 21 +                     help='Number of training epoch. Default: 20')
+# 21 ? ++++++++++++++++
+# 22 -     help='Learning rate during optimization. Default: 1e-3')
+# 23 +                     help='Learning rate during optimization. Default: 1e-3')
+# 23 ? ++++++++++++++++
+# 24 -     help='Drop rate of the Dropout Layer. Default: 0.5')
+# 25 +                     help='Drop rate of the Dropout Layer. Default: 0.5')
+# 25 ? ++++++++++++++++
+# 26 -     help='True to train and False to inference. Default: True')
+# 27 +                     help='True to train and False to inference. Default: True')
+# 27 ? ++++++++++++++++
+# 27 - parser.add_argument('--data_dir', type=str, default='../cifar-10_data',
+# 27 ?                                                      ^^
+# 28 + parser.add_argument('--data_dir', type=str, default='/home/helehan/桌面/cifar-10_data',
+# 28 ?                                                      ^^^^^^^^^^^^^^^^
+# 28 -     help='Data directory. Default: ../cifar-10_data')
+# 28 ?                                    ^^
+# 29 +                     help='Data directory. Default: data/cifar-10_data')
+# 29 ? ++++++++++++++++                                   ^^^^
+# 30 -     help='Training directory for saving model. Default: ./train')
+# 31 +                     help='Training directory for saving model. Default: ./train')
+# 31 ? ++++++++++++++++
+# 32 -     help='The version for inference. Set 0 to use latest checkpoint. Default: 0')
+# 33 +                     help='The version for inference. Set 0 to use latest checkpoint. Default: 0')
+# 33 ? ++++++++++++++++
+# 34 + parser.add_argument(
+# 35 +         "--without_BatchNorm",
+# 36 +         action="store_true",
+# 37 +         dest="without_BatchNorm",
+# 38 +         help="if you want to ban BatchNorm, then input --without_BatchNorm, ohterwise do not",
+# 39 +     )
+# 40 + parser.add_argument(
+# 41 +         "--without_dropout",
+# 42 +         action="store_true",
+# 43 +         dest="without_dropout",
+# 44 +         help="if you want to ban dropout, then input --without_dropout, ohterwise do not",
+# 45 +     )
+# 34 -
+# 47 + batch_size, learning_rate, drop_rate = args.batch_size, args.learning_rate, args.drop_rate
+# 48 + without_BatchNorm, without_dropout = args.without_BatchNorm, args.without_dropout
+# 55 - def train_epoch(model, X, y, optimizer): # Training Process
+# 69 + def train_epoch(model, X, y, optimizer):  # Training Process
+# 69 ?                                          +
+# 61 -         X_batch, y_batch = torch.from_numpy(X[st:ed]).to(device), torch.from_numpy(y[st:ed]).to(device)
+# 75 +         X_batch, y_batch = torch.from_numpy(X[st:ed]).to(
+# 76 +             device), torch.from_numpy(y[st:ed]).to(device)
+# 76 - def valid_epoch(model, X, y): # Valid Process
+# 91 + def valid_epoch(model, X, y):  # Valid Process
+# 91 ?                               +
+# 81 -         X_batch, y_batch = torch.from_numpy(X[st:ed]).to(device), torch.from_numpy(y[st:ed]).to(device)
+# 96 +         X_batch, y_batch = torch.from_numpy(X[st:ed]).to(
+# 97 +             device), torch.from_numpy(y[st:ed]).to(device)
+# 94 - def inference(model, X): # Test Process
+# 110 + def inference(model, X):  # Test Process
+# 110 ?                          +
+# 117 +     wandb.init(project="ablation", entity="eren-zhao", name=f"{batch_size}_{learning_rate}_{drop_rate}_{without_BatchNorm}_{without_dropout}")
+# 118 +     wandb.config = {
+# 119 +     "learning_rate": learning_rate,
+# 120 +      "batch_size": batch_size,
+# 121 +     "drop_rate": drop_rate
+# 122 +     }
+# 124 +     train_acc_list = []
+# 125 +     train_loss_list = []
+# 126 +     val_acc_list = []
+# 127 +     val_loss_list = []
+# 103 -         os.mkdir(args.train_dir)
+# 129 +         os.makedirs(args.train_dir, exist_ok=True)
+# 129 ?             + +   +               +++++++++++++++
+# 108 -         mlp_model = Model(drop_rate=args.drop_rate)
+# 134 +         mlp_model = Model(drop_rate=args.drop_rate, without_BatchNorm=without_BatchNorm, without_Dropout=without_dropout)
+# 137 +         wandb.watch(mlp_model)
+# 112 -
+# 113 -         # model_path = os.path.join(args.train_dir, 'checkpoint_%d.pth.tar' % args.inference_version)
+# 114 -         # if os.path.exists(model_path):
+# 115 -         # 	mlp_model = torch.load(model_path)
+# 144 +             train_acc, train_loss = train_epoch(
+# 121 -             train_acc, train_loss = train_epoch(mlp_model, X_train, y_train, optimizer)
+# 121 ?             ---------- ---------- - ^^^^^^^^^^^^
+# 145 +                 mlp_model, X_train, y_train, optimizer)
+# 145 ?                ^
+# 130 -                 # with open(os.path.join(args.train_dir, 'checkpoint_{}.pth.tar'.format(epoch)), 'wb') as fout:
+# 131 -                 # 	torch.save(mlp_model, fout)
+# 132 -                 # with open(os.path.join(args.train_dir, 'checkpoint_0.pth.tar'), 'wb') as fout:
+# 133 -                 # 	torch.save(mlp_model, fout)
+# 156 +             print("Epoch " + str(epoch) + " of " +
+# 136 -             print("Epoch " + str(epoch) + " of " + str(args.num_epochs) + " took " + str(epoch_time) + "s")
+# 136 ?             ------------ - - ---------- - --------
+# 157 +                   str(args.num_epochs) + " took " + str(epoch_time) + "s")
+# 137 -             print("  learning rate:                 " + str(optimizer.param_groups[0]['lr']))
+# 158 +             print("  learning rate:                 " +
+# 159 +                   str(optimizer.param_groups[0]['lr']))
+# 146 -
+# 168 +             wandb.log({
+# 169 +                 "train_acc": train_acc,
+# 170 +                 "train_loss": train_loss,
+# 171 +                 "val_acc": val_acc,
+# 172 +                 "val_loss": val_loss,
+# 173 +                 "test_acc": test_acc,
+# 174 +                 "test_loss": test_loss,
+# 175 +             })
+# 176 +             train_acc_list.append(train_acc)
+# 177 +             train_loss_list.append(train_loss)
+# 178 +             val_acc_list.append(val_acc)
+# 179 +             val_loss_list.append(val_loss)
+# 184 +         with open(os.path.join(args.train_dir, 'train_acc.json'), 'w') as f:
+# 185 +             json.dump(train_acc_list, f)
+# 186 +         with open(os.path.join(args.train_dir, 'train_loss.json'), 'w') as f:
+# 187 +             json.dump(train_loss_list, f)
+# 188 +         with open(os.path.join(args.train_dir, 'val_acc.json'), 'w') as f:
+# 189 +             json.dump(val_acc_list, f)
+# 190 +         with open(os.path.join(args.train_dir, 'val_loss.json'), 'w') as f:
+# 191 +             json.dump(val_loss_list, f)
+# 192 +         with open(os.path.join(args.train_dir, 'test_result.txt'), 'w') as f:
+# 193 +             f.write(f'test acc={test_acc}\n')
+# 194 +             f.write(f'test loss={test_loss}')
+# 199 +         model_path = os.path.join(
+# 155 -         model_path = os.path.join(args.train_dir, 'checkpoint_%d.pth.tar' % args.inference_version)
+# 155 ?         ---------- - ^^^^^^^^^^^^^
+# 200 +             args.train_dir, 'checkpoint_%d.pth.tar' % args.inference_version)
+# 200 ?           ^^
+
