@@ -356,10 +356,8 @@ class TfmrLMHeadModel(nn.Module):
                         # TODO START
                         # implement top-k sampling
                         #! HGF
-                        top_k = min(max(self.top_k, self.min_tokens_to_keep), logits.size(-1))  # Safety check
-                        # Remove all tokens with a probability less than the last token of the top-k
                         indices_to_remove = logits < torch.topk(logits, top_k)[0][..., -1, None]
-                        logits = logits.masked_fill(indices_to_remove, self.filter_value)
+                        logits = logits.masked_fill(indices_to_remove, -float("inf"))
                         # TODO END
 
 

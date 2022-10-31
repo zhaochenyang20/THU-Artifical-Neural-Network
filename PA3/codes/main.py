@@ -262,7 +262,10 @@ if __name__ == '__main__':
                 losses.append(loss.tolist())
 
                 if (batch_num) % 10 == 0:
-                    print("Epoch %d Batch %d, train loss %f" % (epoch, batch_num, np.mean(losses[-100:])))
+                    taring_loss = np.mean(losses[-100:])
+                    if using_wandb:
+                        wandb.log({'training_epoch': epoch, "batch_num": batch_num, 'train_loss_batch': taring_loss})
+                    print("Epoch %d Batch %d, train loss %f" % (epoch, batch_num, taring_loss))
 
             train_loss = np.mean(losses)
 
