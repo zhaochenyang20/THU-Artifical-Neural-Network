@@ -1,5 +1,6 @@
 from multiprocessing.connection import wait
 from psutil import cpu_count
+from sympy import arg
 import tqdm
 import torch
 import torch.nn as nn
@@ -314,9 +315,12 @@ if __name__ == "__main__":
                 config = ModelConfig(**model_config)
             wandb_run_name = f"{model_config['n_layer']}"
         else:
+            #! 用 full 的话，batch_size = 64 会炸
             wandb_run_name = str(pretrain_dir).split("/")[-1].strip(".tar")
+            if wandb_run_name == "full":
+                wandb_run_name = wandb_run_name + f"_bs{args.batch_size}"
     else:
-        test_model = str(test).split("/")[-1].strip(".tar")
+        test_model = str(test).split("/")[-1].strip(".path.tar")
         wandb_run_name = f"{test_model}_{decode_strategy}_{temperature}_{top_p}_{top_k}"
 
     args.name = wandb_run_name
@@ -512,7 +516,7 @@ if __name__ == "__main__":
             top_k=args.top_k,
         )
         os.makedirs("./test_results", exist_ok=True)
-        with open("./test_results/%s.txt" % args.test, "a+") as fout:
+        with open("./test_results/%s.txt" % args.name, "a+") as fout:
             for k, output in enumerate(result):
                 out = tokenizer.decode(output)
                 print(k, out)
