@@ -80,7 +80,7 @@ def parser_args():
         "--train_dir",
         type=str,
         default="./train_ckpt",
-        help="Training directory for saving model. Default: ./train",
+        help="Training directory for saving model. Default: ./train_ckpt",
     )
     #! 需要对比 pretrain 与 skcratch 的结果
     parser.add_argument(
@@ -105,7 +105,7 @@ def parser_args():
     parser.add_argument(
         "--temperature",
         type=float,
-        default=1,
+        default=0.9,
         help="The temperature for decoding. Default: 1",
     )
     parser.add_argument(
@@ -317,7 +317,7 @@ if __name__ == "__main__":
             if wandb_run_name == "full":
                 wandb_run_name = wandb_run_name + f"_bs{args.batch_size}"
     else:
-        test_model = str(test).split("/")[-1].strip(".path.tar")
+        test_model = str(test).split("/")[-1].strip(".tar")
         wandb_run_name = f"{test_model}_{decode_strategy}_{temperature}_{top_p}_{top_k}"
 
     args.name = wandb_run_name
@@ -438,7 +438,7 @@ if __name__ == "__main__":
 
                 os.makedirs(args.train_dir, exist_ok=True)
                 with open(
-                    os.path.join(args.train_dir, "%s.pth.tar" % args.name), "wb"
+                    os.path.join(args.train_dir, "%s.tar" % args.name), "wb"
                 ) as fout:
                     torch.save(model, fout)
                 epoch_time = time.time() - start_time
@@ -516,7 +516,6 @@ if __name__ == "__main__":
         with open("./test_results/%s.txt" % args.name, "a+") as fout:
             for k, output in enumerate(result):
                 out = tokenizer.decode(output)
-                print(k, out)
                 fout.write(out + "\n")
             fout.write("----------------------------------------------------\n")
         eval_result = evaluate(gen_ids=result, truth_ids=data_remove_pad["test"])

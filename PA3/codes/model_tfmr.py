@@ -364,8 +364,7 @@ class TfmrLMHeadModel(nn.Module):
                         indices_to_remove = torch.masked_select(
                             sorted_indices, sorted_indices_to_remove
                         )
-                        print("###sorted_indeices  sorted_indeices  sorted_indeices###")
-                        print(indices_to_remove)
+
 
                         logits = logits.reshape(-1)
                         logits = torch.index_fill(
@@ -374,9 +373,6 @@ class TfmrLMHeadModel(nn.Module):
                         logits = logits.reshape(
                             sorted_indices.shape[0], sorted_indices.shape[1]
                         )
-                        print("###logits  logits  logits###")
-                        print(logits)
-                        print(logits.shape)
 
                         # TODO END
                     elif decode_strategy == "top-k":
