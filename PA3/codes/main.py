@@ -14,6 +14,7 @@ import torch.nn.functional as F
 from tokenizer import get_tokenizer
 import os
 from model_tfmr import TfmrLMHeadModel, TransposeLinear
+
 random.seed(1229)
 torch.manual_seed(1229)
 torch.cuda.manual_seed_all(1229)
@@ -26,48 +27,138 @@ from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 #! test 的名字和  train 的 ckpt 完全一致。但是 wandb_run_name 会带上 temperature, top_k, top_p 等参数
 def parser_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--name', type=str, default=None,
-        help='Experiment name. Used for wandb.')
-    parser.add_argument('--model_config', type=str, default="config_base.json",
-        help='Path to the configuration file. Default: ./config.json')
-    parser.add_argument('--tokenizer_dir', type=str, default="./tokenizer",
-        help='Tokenizer file directory. Default: ./tokenizer')
-    parser.add_argument('--num_epochs', type=int, default=20,
-        help='Number of training epoch. Default: 20')
-    parser.add_argument('--cpu_count', type=int, default=20,
-        help='Number of CPU cores for evaluation. Default: 20')
-    parser.add_argument('--batch_size', type=int, default=64,
-        help='The number of batch_size. Default: 32')
-    parser.add_argument('--learning_rate', type=float, default=1e-4,
-        help='Learning rate during optimization. Default: 1e-4')
-    parser.add_argument('--test', type=str, default=None,
-        help='Evaluate the model with the specified name. Default: None')
-    parser.add_argument('--data_dir', type=str, default='./data',
-        help='Data directory. Default: ../data')
-    parser.add_argument('--train_dir', type=str, default='./train_ckpt',
-        help='Training directory for saving model. Default: ./train')
+    parser.add_argument(
+        "--name", type=str, default=None, help="Experiment name. Used for wandb."
+    )
+    parser.add_argument(
+        "--model_config",
+        type=str,
+        default="config_base.json",
+        help="Path to the configuration file. Default: ./config.json",
+    )
+    parser.add_argument(
+        "--tokenizer_dir",
+        type=str,
+        default="./tokenizer",
+        help="Tokenizer file directory. Default: ./tokenizer",
+    )
+    parser.add_argument(
+        "--num_epochs",
+        type=int,
+        default=20,
+        help="Number of training epoch. Default: 20",
+    )
+    parser.add_argument(
+        "--cpu_count",
+        type=int,
+        default=20,
+        help="Number of CPU cores for evaluation. Default: 20",
+    )
+    parser.add_argument(
+        "--batch_size",
+        type=int,
+        default=64,
+        help="The number of batch_size. Default: 32",
+    )
+    parser.add_argument(
+        "--learning_rate",
+        type=float,
+        default=1e-4,
+        help="Learning rate during optimization. Default: 1e-4",
+    )
+    parser.add_argument(
+        "--test",
+        type=str,
+        default=None,
+        help="Evaluate the model with the specified name. Default: None",
+    )
+    parser.add_argument(
+        "--data_dir",
+        type=str,
+        default="./data",
+        help="Data directory. Default: ../data",
+    )
+    parser.add_argument(
+        "--train_dir",
+        type=str,
+        default="./train_ckpt",
+        help="Training directory for saving model. Default: ./train",
+    )
     #! 需要对比 pretrain 与 skcratch 的结果
-    parser.add_argument('--pretrain_dir', type=str, default=None,
-        help='Pre-Training directory for loading pretrained model. Default: None')
-    parser.add_argument('--maxlen', type=int, default=35,
-        help='Maximum length for training/inference. Default: 35')
-    parser.add_argument('--decode_strategy', type=str, choices=["random", "top-p", "top-k"], default="random",
-        help='The strategy for decoding. Can be "random", "top-p" or "top-k". Default: random')
-    parser.add_argument('--temperature', type=float, default=1,
-        help='The temperature for decoding. Default: 1')
-    parser.add_argument('--top_p', type=float, default=0.8,
-        help='The p for top-p sampling. Default: 0.8')
-    parser.add_argument('--top_k', type=int, default=40,
-        help='The k for top-k sampling. Default: 40')
-    parser.add_argument('--using_wandb', action='store_true',
-        help='Whether to use W&B logging. Default: False')
-    parser.add_argument('--waiting_epoch', type=int, default=5,
-        help='The epoch to start waiting for the tarining to end. Default: 5')
+    parser.add_argument(
+        "--pretrain_dir",
+        type=str,
+        default=None,
+        help="Pre-Training directory for loading pretrained model. Default: None",
+    )
+    parser.add_argument(
+        "--maxlen",
+        type=int,
+        default=35,
+        help="Maximum length for training/inference. Default: 35",
+    )
+    parser.add_argument(
+        "--decode_strategy",
+        type=str,
+        choices=["random", "top-p", "top-k"],
+        default="random",
+        help='The strategy for decoding. Can be "random", "top-p" or "top-k". Default: random',
+    )
+    parser.add_argument(
+        "--temperature",
+        type=float,
+        default=1,
+        help="The temperature for decoding. Default: 1",
+    )
+    parser.add_argument(
+        "--top_p",
+        type=float,
+        default=0.8,
+        help="The p for top-p sampling. Default: 0.8",
+    )
+    parser.add_argument(
+        "--top_k", type=int, default=40, help="The k for top-k sampling. Default: 40"
+    )
+    parser.add_argument(
+        "--using_wandb",
+        action="store_true",
+        help="Whether to use W&B logging. Default: False",
+    )
+    parser.add_argument(
+        "--waiting_epoch",
+        type=int,
+        default=5,
+        help="The epoch to start waiting for the tarining to end. Default: 5",
+    )
     args = parser.parse_args()
-    return (args, args.name, args.model_config, args.tokenizer_dir, args.num_epochs, args.cpu_count, args.batch_size, args.learning_rate, args.test, args.data_dir, args.train_dir, args.pretrain_dir, args.maxlen, args.decode_strategy, args.temperature, args.top_p, args.top_k, args.using_wandb, args.waiting_epoch)
+    return (
+        args,
+        args.name,
+        args.model_config,
+        args.tokenizer_dir,
+        args.num_epochs,
+        args.cpu_count,
+        args.batch_size,
+        args.learning_rate,
+        args.test,
+        args.data_dir,
+        args.train_dir,
+        args.pretrain_dir,
+        args.maxlen,
+        args.decode_strategy,
+        args.temperature,
+        args.top_p,
+        args.top_k,
+        args.using_wandb,
+        args.waiting_epoch,
+    )
+
 
 def _sentence_bleu(ele):
-    return sentence_bleu(ele[0], ele[1], weights=ele[2], smoothing_function=SmoothingFunction().method1)
+    return sentence_bleu(
+        ele[0], ele[1], weights=ele[2], smoothing_function=SmoothingFunction().method1
+    )
+
 
 def fast_evaluate(model, data, batch_size, PAD_ID, device):
     model.eval()
@@ -82,16 +173,18 @@ def fast_evaluate(model, data, batch_size, PAD_ID, device):
             #! Warning
             # Implement the Perplexity metric. Basically it should be the same as the loss function used for training the model.
             # reference: https://huggingface.co/docs/transformers/perplexity
-            tgt_ids = torch.tensor(data[st : ed]).to(device)[:, 1 :]
-            input_ids = input_ids[:, : -1]
+            tgt_ids = torch.tensor(data[st:ed]).to(device)[:, 1:]
+            input_ids = input_ids[:, :-1]
             outputs = model(input_ids)
             lm_logits = outputs["logits"] / args.temperature
 
-            loss = ce_loss_fct(lm_logits.reshape((-1, lm_logits.shape[-1])), tgt_ids.reshape((-1, ))).reshape(input_ids.shape)
+            loss = ce_loss_fct(
+                lm_logits.reshape((-1, lm_logits.shape[-1])), tgt_ids.reshape((-1,))
+            ).reshape(input_ids.shape)
             loss_mask = (input_ids != PAD_ID).float()
             loss_mask[:, 0] = 1.0
             loss *= loss_mask
-            loss = loss.sum(dim = -1) / loss_mask.sum(dim = -1)
+            loss = loss.sum(dim=-1) / loss_mask.sum(dim=-1)
             # TODO END
             all_loss += loss.cpu().numpy().tolist()
     loss = np.mean(all_loss)
@@ -99,15 +192,17 @@ def fast_evaluate(model, data, batch_size, PAD_ID, device):
     model.train()
     return loss, ppl
 
+
 def evaluate(gen_ids, truth_ids, cpu_count=20):
     from multiprocessing import Pool
+
     # reference: https://superfastpython.com/multiprocessing-pool-python/
 
     assert len(gen_ids) == len(truth_ids)
     sample_hyps_num = len(gen_ids)
     res = {}
     for ngrams in [4]:
-        print("computing BLEU-%d"%ngrams)
+        print("computing BLEU-%d" % ngrams)
         bleu_irl_fw, bleu_irl_bw = [], []
         weights = np.ones(ngrams) / ngrams
 
@@ -129,32 +224,39 @@ def evaluate(gen_ids, truth_ids, cpu_count=20):
         pool.close()
         pool.join()
 
-        fw_bleu = (1.0 * sum(bleu_irl_fw) / len(bleu_irl_fw))
-        bw_bleu = (1.0 * sum(bleu_irl_bw) / len(bleu_irl_bw))
+        fw_bleu = 1.0 * sum(bleu_irl_fw) / len(bleu_irl_fw)
+        bw_bleu = 1.0 * sum(bleu_irl_bw) / len(bleu_irl_bw)
         if fw_bleu + bw_bleu > 0:
             fw_bw_bleu = 2.0 * bw_bleu * fw_bleu / (fw_bleu + bw_bleu)
         else:
             fw_bw_bleu = 0
 
-        res.update({"fw-bleu-%d"%ngrams : fw_bleu, \
-            "bw-bleu-%d"%ngrams : bw_bleu, \
-            "fw-bw-bleu-%d"%ngrams : fw_bw_bleu \
-        })
+        res.update(
+            {
+                "fw-bleu-%d" % ngrams: fw_bleu,
+                "bw-bleu-%d" % ngrams: bw_bleu,
+                "fw-bw-bleu-%d" % ngrams: fw_bw_bleu,
+            }
+        )
     return res
+
 
 def load_data(path, tokenizer, PAD_ID, field_list=["train", "dev", "test"], maxlen=40):
     data, data_remove_pad = {}, {}
     for name in field_list:
         data[name], data_remove_pad[name] = [], []
-        with open("%s/%s.txt"%(path, name)) as fin:
+        with open("%s/%s.txt" % (path, name)) as fin:
             for line in fin:
                 tokens = tokenizer.encode(line.strip())
                 if len(tokens) < maxlen:
-                    data[name].append([PAD_ID] + tokens + [PAD_ID]*(maxlen - len(tokens)))
+                    data[name].append(
+                        [PAD_ID] + tokens + [PAD_ID] * (maxlen - len(tokens))
+                    )
                 else:
                     data[name].append([PAD_ID] + tokens[:maxlen])
                 data_remove_pad[name].append(tokens)
     return data, data_remove_pad
+
 
 def get_init_weights_func(config):
     def init_weights(module):
@@ -170,42 +272,68 @@ def get_init_weights_func(config):
         elif isinstance(module, nn.LayerNorm):
             module.bias.data.zero_()
             module.weight.data.fill_(1.0)
+
     return init_weights
 
-if __name__ == '__main__':
 
-    args, name, model_config, tokenizer_dir, num_epochs, cpu_count, batch_size, learning_rate, test, data_dir, train_dir, pretrain_dir, maxlen, decode_strategy, temperature, top_p, top_k, using_wandb, waiting_epoch = parser_args()
-    if test is None:
-        if pretrain_dir is None:
-            wandb_run_name = f"{model_config}"
+if __name__ == "__main__":
+    (
+        args,
+        name,
+        model_config,
+        tokenizer_dir,
+        num_epochs,
+        cpu_count,
+        batch_size,
+        learning_rate,
+        test,
+        data_dir,
+        train_dir,
+        pretrain_dir,
+        maxlen,
+        decode_strategy,
+        temperature,
+        top_p,
+        top_k,
+        using_wandb,
+        waiting_epoch,
+    ) = parser_args()
+    if args.test is None:
+        if args.pretrain_dir is None:
+            print("Created model with fresh parameters.")
+            with open(args.model_config) as fin:
+                model_config = json.load(fin)
+                config = ModelConfig(**model_config)
+            wandb_run_name = f"{model_config['n_layer']}"
         else:
-            wandb_run_name = f"{model_config}_{pretrain_dir}"
+            wandb_run_name = str(pretrain_dir).split("/")[-1].strip(".tar")
     else:
-        wandb_run_name = f"{test}_{decode_strategy}_{temperature}_{top_p}_{top_k}"
+        test_model = str(test).split("/")[-1].strip(".tar")
+        wandb_run_name = f"{test_model}_{decode_strategy}_{temperature}_{top_p}_{top_k}"
 
     args.name = wandb_run_name
-    print(f"training name is {wandb_run_name}")
+    print(f"wandb name is {wandb_run_name}")
 
     if using_wandb:
         wandb.init(project="Text-Gen", entity="eren-zhao", name=wandb_run_name)
         wandb.config = {
-        "name": args.name,
-        "model_config": model_config,
-        "tokenizer_dir": tokenizer_dir,
-        "num_epochs": num_epochs,
-        "cpu_count": cpu_count,
-        "batch_size": batch_size,
-        "learning_rate": learning_rate,
-        "test": test,
-        "data_dir": data_dir,
-        "train_dir": train_dir,
-        "pretrain_dir": pretrain_dir,
-        "maxlen": maxlen,
-        "decode_strategy": decode_strategy,
-        "temperature": temperature,
-        "top_p": top_p,
-        "top_k": top_k,
-    }
+            "name": args.name,
+            "model_config": model_config,
+            "tokenizer_dir": tokenizer_dir,
+            "num_epochs": num_epochs,
+            "cpu_count": cpu_count,
+            "batch_size": batch_size,
+            "learning_rate": learning_rate,
+            "test": test,
+            "data_dir": data_dir,
+            "train_dir": train_dir,
+            "pretrain_dir": pretrain_dir,
+            "maxlen": maxlen,
+            "decode_strategy": decode_strategy,
+            "temperature": temperature,
+            "top_p": top_p,
+            "top_k": top_k,
+        }
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -213,34 +341,38 @@ if __name__ == '__main__':
         os.makedirs(args.train_dir)
 
     tokenizer = get_tokenizer(args.tokenizer_dir)
-    PAD_ID = tokenizer.encoder['<|endoftext|>']
+    PAD_ID = tokenizer.encoder["<|endoftext|>"]
     print("Tokenizer PAD ID:", PAD_ID)
 
     print("Loading Data ...")
-    data, data_remove_pad = load_data(path=args.data_dir, tokenizer=tokenizer, PAD_ID=PAD_ID, field_list=["train", "dev", "test"], maxlen=args.maxlen)
+    data, data_remove_pad = load_data(
+        path=args.data_dir,
+        tokenizer=tokenizer,
+        PAD_ID=PAD_ID,
+        field_list=["train", "dev", "test"],
+        maxlen=args.maxlen,
+    )
 
     if args.test is None:
         if args.pretrain_dir is None:
-            print("Created model with fresh parameters.")
-            with open(args.model_config) as fin:
-                model_config = json.load(fin)
-                config = ModelConfig(**model_config)
             model = TfmrLMHeadModel(config)
             init_weights_func = get_init_weights_func(config=config)
             model.apply(init_weights_func)
         else:
-            model_path = os.path.join(args.pretrain_dir, 'pretrained_ckpt.tar')
+            model_path = os.path.join(args.pretrain_dir, "pretrained_ckpt.tar")
             if os.path.exists(model_path):
                 print("Loading model from %s" % model_path)
                 model = torch.load(model_path)
             else:
-                raise RuntimeError("No such checkpoint: %s"%model_path)
+                raise RuntimeError("No such checkpoint: %s" % model_path)
         model.to(device)
         if using_wandb:
             wandb.watch(model)
         print(model)
 
-        optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=0)
+        optimizer = optim.Adam(
+            model.parameters(), lr=args.learning_rate, weight_decay=0
+        )
         best_val_ppl = float("inf")
         best_epoch = -1
         waiting_epoch = 0
@@ -252,11 +384,18 @@ if __name__ == '__main__':
             while ed < len(data["train"]):
                 batch_num += 1
                 st_time = time.time()
-                st, ed = ed, (ed + args.batch_size) if (ed + args.batch_size < len(data["train"])) else len(data["train"])
+                st, ed = (
+                    ed,
+                    (ed + args.batch_size)
+                    if (ed + args.batch_size < len(data["train"]))
+                    else len(data["train"]),
+                )
                 batched_data = torch.tensor(data["train"][st:ed]).to(device)
 
                 optimizer.zero_grad()
-                loss = model(input_ids=batched_data, labels=batched_data, PAD_ID=PAD_ID)["loss"]
+                loss = model(
+                    input_ids=batched_data, labels=batched_data, PAD_ID=PAD_ID
+                )["loss"]
                 loss.backward()
                 optimizer.step()
                 losses.append(loss.tolist())
@@ -264,33 +403,74 @@ if __name__ == '__main__':
                 if (batch_num) % 10 == 0:
                     taring_loss = np.mean(losses[-100:])
                     if using_wandb:
-                        wandb.log({'training_epoch': epoch, "batch_num": batch_num, 'train_loss_batch': taring_loss})
-                    print("Epoch %d Batch %d, train loss %f" % (epoch, batch_num, taring_loss))
+                        wandb.log(
+                            {
+                                "training_epoch": epoch,
+                                "batch_num": batch_num,
+                                "train_loss_batch": taring_loss,
+                            }
+                        )
+                    print(
+                        "Epoch %d Batch %d, train loss %f"
+                        % (epoch, batch_num, taring_loss)
+                    )
 
             train_loss = np.mean(losses)
 
-            val_loss, val_ppl = fast_evaluate(model=model, data=data["dev"], batch_size=args.batch_size, PAD_ID=PAD_ID, device=device)
+            val_loss, val_ppl = fast_evaluate(
+                model=model,
+                data=data["dev"],
+                batch_size=args.batch_size,
+                PAD_ID=PAD_ID,
+                device=device,
+            )
             if val_ppl < best_val_ppl:
                 best_val_ppl = val_ppl
                 best_epoch = epoch
 
                 os.makedirs(args.train_dir, exist_ok=True)
-                with open(os.path.join(args.train_dir, '%s.pth.tar' % args.name), 'wb') as fout:
+                with open(
+                    os.path.join(args.train_dir, "%s.pth.tar" % args.name), "wb"
+                ) as fout:
                     torch.save(model, fout)
                 epoch_time = time.time() - start_time
-                print("Epoch " + str(epoch) + " of " + str(args.num_epochs) + " took " + str(epoch_time) + "s")
+                print(
+                    "Epoch "
+                    + str(epoch)
+                    + " of "
+                    + str(args.num_epochs)
+                    + " took "
+                    + str(epoch_time)
+                    + "s"
+                )
                 print("  training loss:                 " + str(train_loss))
                 print("  validation loss:               " + str(val_loss))
                 print("  validation perplexity:         " + str(val_ppl))
                 print("  best epoch:                    " + str(best_epoch))
                 print("  best validation perplexity:    " + str(best_val_ppl))
                 if using_wandb:
-                    wandb.log({'epoch': epoch, 'train_loss': train_loss, 'val_loss': val_loss, 'val_ppl': val_ppl, 'best_epoch': best_epoch, 'best_val_ppl': best_val_ppl})
+                    wandb.log(
+                        {
+                            "epoch": epoch,
+                            "train_loss": train_loss,
+                            "val_loss": val_loss,
+                            "val_ppl": val_ppl,
+                            "best_epoch": best_epoch,
+                            "best_val_ppl": best_val_ppl,
+                        }
+                    )
                 waiting_epoch = 0
             else:
                 if using_wandb:
-                    wandb.log({'epoch': epoch, 'train_loss': train_loss, 'val_loss': val_loss, 'val_ppl': val_ppl})
-                print("Validation loss: %.3f, becomes larger. Stop training."%val_ppl)
+                    wandb.log(
+                        {
+                            "epoch": epoch,
+                            "train_loss": train_loss,
+                            "val_loss": val_loss,
+                            "val_ppl": val_ppl,
+                        }
+                    )
+                print("Validation loss: %.3f, becomes larger. Stop training." % val_ppl)
                 waiting_epoch += 1
                 if waiting_epoch >= waiting_epoch:
                     break
@@ -307,19 +487,48 @@ if __name__ == '__main__':
         if using_wandb:
             wandb.watch(model)
         print(model)
-        test_loss, test_ppl = fast_evaluate(model=model, data=data["test"], batch_size=args.batch_size, PAD_ID=PAD_ID, device=device)
+        test_loss, test_ppl = fast_evaluate(
+            model=model,
+            data=data["test"],
+            batch_size=args.batch_size,
+            PAD_ID=PAD_ID,
+            device=device,
+        )
         print("        test_set, perplexity %.2f" % (test_ppl))
-        result = model.inference(device=device, PAD_ID=PAD_ID,\
-            batch_size=args.batch_size, maxlen=args.maxlen, decode_strategy=args.decode_strategy, \
-                temperature=args.temperature, top_p=args.top_p, top_k=args.top_k)
+        result = model.inference(
+            device=device,
+            PAD_ID=PAD_ID,
+            batch_size=args.batch_size,
+            maxlen=args.maxlen,
+            decode_strategy=args.decode_strategy,
+            temperature=args.temperature,
+            top_p=args.top_p,
+            top_k=args.top_k,
+        )
         os.makedirs("./test_results", exist_ok=True)
-        with open('./test_results/%s.txt'%args.name, 'w') as fout:
+        with open("./test_results/%s.txt" % args.name, "w") as fout:
             for k, output in enumerate(result):
                 out = tokenizer.decode(output)
                 print(k, out)
                 fout.write(out + "\n")
         eval_result = evaluate(gen_ids=result, truth_ids=data_remove_pad["test"])
         if using_wandb:
-            wandb.log({'test_loss': test_loss, 'test_ppl': test_ppl, 'eval_result': eval_result})
-        print("        test_set, forward BLEU-4 %.3f, backward BLEU-4 %.3f, harmonic BLEU-4 %.3f" % (eval_result["fw-bleu-4"], eval_result["bw-bleu-4"], eval_result["fw-bw-bleu-4"]))
-        print("        test_set, write inference results to output_%s.txt"%args.decode_strategy)
+            wandb.log(
+                {
+                    "test_loss": test_loss,
+                    "test_ppl": test_ppl,
+                    "eval_result": eval_result,
+                }
+            )
+        print(
+            "        test_set, forward BLEU-4 %.3f, backward BLEU-4 %.3f, harmonic BLEU-4 %.3f"
+            % (
+                eval_result["fw-bleu-4"],
+                eval_result["bw-bleu-4"],
+                eval_result["fw-bw-bleu-4"],
+            )
+        )
+        print(
+            "        test_set, write inference results to output_%s.txt"
+            % args.decode_strategy
+        )
