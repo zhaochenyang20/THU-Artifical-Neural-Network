@@ -1,4 +1,3 @@
-from turtle import position
 import torch
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss
