@@ -59,12 +59,12 @@ def parser_args():
         help='The p for top-p sampling. Default: 0.8')
     parser.add_argument('--top_k', type=int, default=40,
         help='The k for top-k sampling. Default: 40')
-    parser.add_argument('--wandb', action='store_true',
+    parser.add_argument('--using_wandb', action='store_true',
         help='Whether to use W&B logging. Default: False')
     parser.add_argument('--waiting_epoch', type=int, default=5,
         help='The epoch to start waiting for the tarining to end. Default: 5')
     args = parser.parse_args()
-    return (args, args.name, args.model_config, args.tokenizer_dir, args.num_epochs, args.cpu_count, args.batch_size, args.learning_rate, args.test, args.data_dir, args.train_dir, args.pretrain_dir, args.maxlen, args.decode_strategy, args.temperature, args.top_p, args.top_k, args.wandb, args.waiting_epoch)
+    return (args, args.name, args.model_config, args.tokenizer_dir, args.num_epochs, args.cpu_count, args.batch_size, args.learning_rate, args.test, args.data_dir, args.train_dir, args.pretrain_dir, args.maxlen, args.decode_strategy, args.temperature, args.top_p, args.top_k, args.using_wandb, args.waiting_epoch)
 
 def _sentence_bleu(ele):
     return sentence_bleu(ele[0], ele[1], weights=ele[2], smoothing_function=SmoothingFunction().method1)
