@@ -43,7 +43,7 @@ def parser_args():
         help='Data directory. Default: ../data')
     parser.add_argument('--train_dir', type=str, default='./train_test',
         help='Training directory for saving model. Default: ./train')
-    parser.add_argument('--pretrain_dir', type=str, default='None',
+    parser.add_argument('--pretrain_dir', type=str, default=None,
         help='Pre-Training directory for loading pretrained model. Default: None')
     parser.add_argument('--maxlen', type=int, default=35,
         help='Maximum length for training/inference. Default: 35')
