@@ -306,7 +306,8 @@ if __name__ == '__main__':
         result = model.inference(device=device, PAD_ID=PAD_ID,\
             batch_size=args.batch_size, maxlen=args.maxlen, decode_strategy=args.decode_strategy, \
                 temperature=args.temperature, top_p=args.top_p, top_k=args.top_k)
-        with open('output_%s.txt'%args.name, 'w') as fout:
+        os.mkdir("./test_results", exist_ok=True)
+        with open('./test_results/%s.txt'%args.name, 'w') as fout:
             for k, output in enumerate(result):
                 out = tokenizer.decode(output)
                 print(k, out)
