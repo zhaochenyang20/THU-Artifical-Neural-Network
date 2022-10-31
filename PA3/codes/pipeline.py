@@ -2,8 +2,6 @@ from itertools import product
 import os
 import subprocess
 
-from django.forms import modelformset_factory
-
 def train_models():
     layers = [3, 12]
     for layer in layers:
