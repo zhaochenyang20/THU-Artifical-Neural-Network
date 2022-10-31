@@ -28,7 +28,7 @@ def parser_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', type=str, default=None,
         help='Experiment name. Used for wandb.')
-    parser.add_argument('--model_config', type=str, default="./config_base.json",
+    parser.add_argument('--model_config', type=str, default="config_base.json",
         help='Path to the configuration file. Default: ./config.json')
     parser.add_argument('--tokenizer_dir', type=str, default="./tokenizer",
         help='Tokenizer file directory. Default: ./tokenizer')
@@ -184,6 +184,7 @@ if __name__ == '__main__':
         wandb_run_name = f"{test}_{decode_strategy}_{temperature}_{top_p}_{top_k}"
 
     args.name = wandb_run_name
+    print(f"training name is {wandb_run_name}")
 
     if using_wandb:
         wandb.init(project="Text-Gen", entity="eren-zhao", name=wandb_run_name)
@@ -209,7 +210,7 @@ if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     if not os.path.exists(args.train_dir):
-        os.mkdir(args.train_dir)
+        os.makedirs(args.train_dir)
 
     tokenizer = get_tokenizer(args.tokenizer_dir)
     PAD_ID = tokenizer.encoder['<|endoftext|>']
@@ -270,7 +271,8 @@ if __name__ == '__main__':
                 best_val_ppl = val_ppl
                 best_epoch = epoch
 
-                with open(os.path.join(args.train_dir, 'checkpoint_%s.pth.tar' % args.name), 'wb') as fout:
+                os.makedirs(args.train_dir, exist_ok=True)
+                with open(os.path.join(args.train_dir, '%s.pth.tar' % args.name), 'wb') as fout:
                     torch.save(model, fout)
                 epoch_time = time.time() - start_time
                 print("Epoch " + str(epoch) + " of " + str(args.num_epochs) + " took " + str(epoch_time) + "s")
@@ -291,7 +293,8 @@ if __name__ == '__main__':
                     break
 
     else:
-        model_path = os.path.join(args.train_dir, 'checkpoint_%s.pth.tar' % args.test)
+        #! test 直接是 model 名字
+        model_path = os.path.join(args.train_dir, f"{args.test}")
         if os.path.exists(model_path):
             print("Loading model from %s" % model_path)
             model = torch.load(model_path)
@@ -306,7 +309,7 @@ if __name__ == '__main__':
         result = model.inference(device=device, PAD_ID=PAD_ID,\
             batch_size=args.batch_size, maxlen=args.maxlen, decode_strategy=args.decode_strategy, \
                 temperature=args.temperature, top_p=args.top_p, top_k=args.top_k)
-        os.mkdir("./test_results", exist_ok=True)
+        os.makedirs("./test_results", exist_ok=True)
         with open('./test_results/%s.txt'%args.name, 'w') as fout:
             for k, output in enumerate(result):
                 out = tokenizer.decode(output)

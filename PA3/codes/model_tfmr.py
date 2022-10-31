@@ -338,6 +338,7 @@ class TfmrLMHeadModel(nn.Module):
                         # for batch_index in range(len(removed_sorted_indices)) :
                         #     logits[batch_index][sorted_indices[batch_index][removed_sorted_indices[batch_index]]] = -1E10
 
+                        self.min_tokens_to_keep = 5
                         sorted_logits, sorted_indices = torch.sort(logits, descending=False)
                         cumulative_probs = sorted_logits.softmax(dim=-1).cumsum(dim=-1)
 
