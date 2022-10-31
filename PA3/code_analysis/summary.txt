@@ -1,0 +1,164 @@
+########################
+# Missing Files
+########################
+# config.json
+# .DS_Store
+# configuration.py
+# tokenizer.py
+
+########################
+# Filled Code
+########################
+# ../codes2/model_tfmr.py:1
+            torch.tril(torch.ones((max_positions, max_positions), dtype=torch.uint8)).view(
+                1, 1, max_positions, max_positions
+            ),
+
+# ../codes2/model_tfmr.py:2
+        attn_weights = torch.matmul(query, key.transpose(-1, -2))
+        query_length, key_length = query.size(-2), key.size(-2)
+        causal_mask = self.bias[:, :, key_length - query_length : key_length, :key_length].bool()
+        attn_weights = nn.Softmax(dim=-1)(attn_weights)
+        attn_output = torch.matmul(attn_weights, value)
+
+# ../codes2/model_tfmr.py:3
+        new_shape = tensor.size()[:-1] + (num_heads, attn_head_size)
+        tensor = tensor.view(*new_shape)
+        return tensor.permute(0, 2, 1, 3)  # (batch, head, seq_length, head_features)
+
+# ../codes2/model_tfmr.py:4
+        tensor = tensor.permute(0, 2, 1, 3).contiguous()
+        new_shape = tensor.size()[:-2] + (num_heads * attn_head_size,)
+        return tensor.view(new_shape)
+
+# ../codes2/model_tfmr.py:5
+        hidden_states = attn_output + residual
+
+        residual = hidden_states
+        hidden_states = self.ln_2(hidden_states)
+        feed_forward_hidden_states = self.mlp(hidden_states)
+        # residual connection
+        hidden_states = residual + feed_forward_hidden_states
+
+# ../codes2/model_tfmr.py:6
+        if past_key_values is None:
+            past_length = 0
+            past_key_values = tuple([None] * len(self.h))
+        else:
+            past_length = past_key_values[0][0].size(-2)
+
+        position_ids = torch.arange(past_length, input_shape[-1] + past_length, dtype=torch.long, device=device)
+        position_ids = position_ids.unsqueeze(0).view(-1, input_shape[-1])
+        position_embeds = self.wpe(position_ids)
+
+# ../codes2/model_tfmr.py:7
+            shift_logits = lm_logits[..., :-1, :].contiguous()
+            shift_labels = labels[..., 1:].contiguous()
+
+            pad_pos = torch.eq(shift_labels, PAD_ID).to(torch.float).to(labels.device)
+            pad_pos = torch.cat([torch.zeros([shift_labels.size()[0], 1]).to(labels.device), pad_pos[:, :-1]], 1)
+            loss_mask = 1. - pad_pos
+            loss = ce_loss_fct(shift_logits.view(-1, shift_logits.shape[-1]), shift_labels.view(-1))
+            loss = torch.mean(torch.sum(loss.view(shift_labels.size()[0], -1) * loss_mask, 1) / (torch.sum(loss_mask, 1) + 1e-20))
+
+# ../codes2/model_tfmr.py:8
+                        sorted_logits, sorted_indices = torch.sort(logits, descending=True)
+                        cumulative_probs = torch.cumsum(F.softmax(sorted_logits, dim=-1), dim=-1)
+
+                        # Remove tokens with cumulative probability above the threshold
+                        sorted_indices_to_remove = cumulative_probs > top_p
+                        # Shift the indices to the right to keep also the first token above the threshold
+                        sorted_indices_to_remove[:, 1:] = sorted_indices_to_remove[:, :-1].clone()
+                        sorted_indices_to_remove[:, 0] = 0
+                        sorted_indices = (sorted_indices + torch.arange(sorted_indices.shape[0], device=device, dtype=torch.long).unsqueeze(-1) * sorted_indices.shape[1])
+
+                        indices_to_remove = torch.masked_select(sorted_indices, sorted_indices_to_remove)
+                        logits = logits.reshape(-1)
+                        logits = torch.index_fill(logits, 0, indices_to_remove, -float("inf"))
+                        logits = logits.reshape(sorted_indices.shape[0], sorted_indices.shape[1])
+
+# ../codes2/main.py:1
+            tgt_ids = input_ids[:, 1:]
+            input_ids = input_ids[:, :-1]
+            lm_logits = outputs["logits"]
+            pad_pos = torch.eq(tgt_ids, PAD_ID).to(torch.float).to(device)
+            pad_pos = torch.cat([torch.zeros([ed-st, 1]).to(device), pad_pos[:, :-1]], 1)
+            loss_mask = 1. - pad_pos
+            loss = torch.sum(loss.view(input_ids.size()[0], -1) * loss_mask, 1) / (torch.sum(loss_mask, 1) + 1e-20)
+
+
+########################
+# References
+########################
+
+########################
+# Other Modifications
+########################
+# _codes/model_tfmr.py -> ../codes2/model_tfmr.py
+# 1 - from turtle import position
+# 83 +         """
+# 84 +         Splits hidden_size dim into attn_head_size and num_heads
+# 85 +         """
+# 94 +         """
+# 95 +         Merges attn_head_size dim and num_attn_heads dim into hidden_size
+# 96 +         """
+# 286 -
+# 321 -
+# 371 +
+# _codes/main.py -> ../codes2/main.py
+# 42 - parser.add_argument('--train_dir', type=str, default='./train_test',
+# 42 + parser.add_argument('--train_dir', type=str, default='./train_test_pretrain_1612',
+# 42 ?                                                                   ++++++++++++++
+# 44 - parser.add_argument('--pretrain_dir', type=str, default='None',
+# 44 ?                                                         ^^^ ^^
+# 44 + parser.add_argument('--pretrain_dir', type=str, default="pretrain_1612",
+# 44 ?                                                         ^^^^^^^^ ^^^^^^
+# 48 - parser.add_argument('--decode_strategy', type=str, choices=["random", "top-p"], default="random",
+# 48 ?                                                                                          ^^^^ ^
+# 48 + parser.add_argument('--decode_strategy', type=str, choices=["random", "top-p"], default="top-p",
+# 48 ?                                                                                          ^ ^^^
+# 52 - parser.add_argument('--top_p', type=float, default=1.0,
+# 52 ?                                                    ^ ^
+# 52 + parser.add_argument('--top_p', type=float, default=0.9,
+# 52 ?                                                    ^ ^
+# 53 -     help='The p for top-p sampling. Default: 1.0')
+# 53 ?                                              ^ ^
+# 53 +     help='The p for top-p sampling. Default: 0.9')
+# 53 ?                                              ^ ^
+# 97 +         print(weights)
+# 98 +
+# 99 +         # for i in range(sample_hyps_num):
+# 100 +         #     print(i)
+# 101 +         #     print(gen_ids[i])
+# 102 +         #     print(truth_ids[i])
+# 103 +         #     bleu_irl_fw.append(sentence_bleu(truth_ids, gen_ids[i], weights=weights, smoothing_function=SmoothingFunction().method1))
+# 104 +         #     bleu_irl_bw.append(sentence_bleu(gen_ids, truth_ids[i], weights=weights, smoothing_function=SmoothingFunction().method1))
+# 105 +
+# 169 +     # from transformers import GPT2LMHeadModel, AutoModel, AutoConfig
+# 170 +     # model = GPT2LMHeadModel.from_pretrained("/home/data/guanjian/transformers_model/gpt2")
+# 171 +     # # config = AutoConfig.from_pretrained("../config.json")
+# 172 +     # with open("./config.json") as fin:
+# 173 +     #     model_config = json.load(fin)
+# 174 +     #     # model_config["n_layer"] = 12
+# 175 +     #     config = ModelConfig(**model_config)
+# 176 +     # model2 = TfmrLMHeadModel(config)
+# 177 +
+# 178 +     # src_dict = model.state_dict()
+# 179 +     # tgt_dict = model2.state_dict()
+# 180 +     # print(src_dict.keys())
+# 181 +     # print(tgt_dict.keys())
+# 182 +     # for key in tgt_dict.keys():
+# 183 +     #     src_key = key.replace("h.1", "h.6").replace("h.2", "h.11")
+# 184 +     #     src_size = list(src_dict[src_key].size())
+# 185 +     #     tgt_size = list(tgt_dict[key].size())
+# 186 +     #     assert len(src_size) == len(tgt_size)
+# 187 +     #     tmp_tensor = src_dict[src_key]
+# 188 +     #     tgt_dict[key] = tmp_tensor
+# 189 +     # model2.load_state_dict(tgt_dict)
+# 190 +     # with open('./checkpoint_pretrain.pth.tar', 'wb') as fout:
+# 191 +     #     torch.save(model2, fout)
+# 192 +     # exit()
+# 289 +         # print("        test_set, forward BLEU-1 %.3f, backward BLEU-1 %.3f, harmonic BLEU-1 %.3f" % (eval_result["fw-bleu-1"], eval_result["bw-bleu-1"], eval_result["fw-bw-bleu-1"]))
+# 290 +         # print("        test_set, forward BLEU-2 %.3f, backward BLEU-2 %.3f, harmonic BLEU-2 %.3f" % (eval_result["fw-bleu-2"], eval_result["bw-bleu-2"], eval_result["fw-bw-bleu-2"]))
+# 291 +         # print("        test_set, forward BLEU-3 %.3f, backward BLEU-3 %.3f, harmonic BLEU-3 %.3f" % (eval_result["fw-bleu-3"], eval_result["bw-bleu-3"], eval_result["fw-bw-bleu-3"]))
+
