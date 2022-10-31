@@ -315,6 +315,7 @@ if __name__ == "__main__":
             #! 用 full 的话，batch_size = 64 会炸
             wandb_run_name = str(pretrain_dir).split("/")[-1].strip(".tar")
             if wandb_run_name == "full":
+                args.batch_size = 48
                 wandb_run_name = wandb_run_name + f"_bs{args.batch_size}"
     else:
         test_model = str(test).split("/")[-1].strip(".tar")
