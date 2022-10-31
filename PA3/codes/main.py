@@ -25,7 +25,7 @@ def parser_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', type=str, default="run",
         help='Experiment name. Default: run')
-    parser.add_argument('--model_config', type=str, default="./config.json",
+    parser.add_argument('--model_config', type=str, default="./config_base.json",
         help='Path to the configuration file. Default: ./config.json')
     parser.add_argument('--tokenizer_dir', type=str, default="./tokenizer",
         help='Tokenizer file directory. Default: ./tokenizer')
