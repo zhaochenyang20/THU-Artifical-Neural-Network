@@ -26,8 +26,8 @@ from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 #! test 的名字和  train 的 ckpt 完全一致。但是 wandb_run_name 会带上 temperature, top_k, top_p 等参数
 def parser_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--name', type=str, default=None, required=True,
-        help='Experiment name. Default: run')
+    parser.add_argument('--name', type=str, default=None,
+        help='Experiment name. Used for wandb.')
     parser.add_argument('--model_config', type=str, default="./config_base.json",
         help='Path to the configuration file. Default: ./config.json')
     parser.add_argument('--tokenizer_dir', type=str, default="./tokenizer",
