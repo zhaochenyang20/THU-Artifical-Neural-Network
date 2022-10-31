@@ -130,6 +130,12 @@ def parser_args():
         default=5,
         help="The epoch to start waiting for the tarining to end. Default: 5",
     )
+    parser.add_argument(
+        "--num_layers",
+        type=int,
+        default=3,
+        help="The number of layers for the transformer. Default: 3",
+    )
     args = parser.parse_args()
     return (
         args,
@@ -151,6 +157,7 @@ def parser_args():
         args.top_k,
         args.using_wandb,
         args.waiting_epoch,
+        args.num_layers,
     )
 
 
@@ -168,7 +175,6 @@ def fast_evaluate(model, data, batch_size, PAD_ID, device):
         with torch.no_grad():
             input_ids = torch.tensor(data[st:ed]).to(device)
             ce_loss_fct = torch.nn.CrossEntropyLoss(reduction="none")
-
             # TODO START
             #! Warning
             # Implement the Perplexity metric. Basically it should be the same as the loss function used for training the model.
@@ -297,12 +303,14 @@ if __name__ == "__main__":
         top_k,
         using_wandb,
         waiting_epoch,
+        num_layers,
     ) = parser_args()
     if args.test is None:
         if args.pretrain_dir is None:
             print("Created model with fresh parameters.")
             with open(args.model_config) as fin:
                 model_config = json.load(fin)
+                model_config["num_layers"] = args.num_layers
                 config = ModelConfig(**model_config)
             wandb_run_name = f"{model_config['n_layer']}"
         else:
@@ -359,12 +367,11 @@ if __name__ == "__main__":
             init_weights_func = get_init_weights_func(config=config)
             model.apply(init_weights_func)
         else:
-            model_path = os.path.join(args.pretrain_dir, "pretrained_ckpt.tar")
-            if os.path.exists(model_path):
-                print("Loading model from %s" % model_path)
-                model = torch.load(model_path)
+            if os.path.exists(args.pretrain_dir):
+                print("Loading model from %s" % args.pretrain_dir)
+                model = torch.load(args.pretrain_dir)
             else:
-                raise RuntimeError("No such checkpoint: %s" % model_path)
+                raise RuntimeError("No such checkpoint: %s" % args.pretrain_dir)
         model.to(device)
         if using_wandb:
             wandb.watch(model)
@@ -476,11 +483,10 @@ if __name__ == "__main__":
                     break
 
     else:
-        #! test 直接是 model 名字
-        model_path = os.path.join(args.train_dir, f"{args.test}")
-        if os.path.exists(model_path):
-            print("Loading model from %s" % model_path)
-            model = torch.load(model_path)
+        #! test 直接是 path
+        if os.path.exists(args.test):
+            print("Loading model from %s" % args.test)
+            model = torch.load(args.test)
         else:
             raise RuntimeError("No such checkpoint")
         model.to(device)
@@ -506,11 +512,12 @@ if __name__ == "__main__":
             top_k=args.top_k,
         )
         os.makedirs("./test_results", exist_ok=True)
-        with open("./test_results/%s.txt" % args.name, "w") as fout:
+        with open("./test_results/%s.txt" % args.test, "a+") as fout:
             for k, output in enumerate(result):
                 out = tokenizer.decode(output)
                 print(k, out)
                 fout.write(out + "\n")
+            fout.write("----------------------------------------------------\n")
         eval_result = evaluate(gen_ids=result, truth_ids=data_remove_pad["test"])
         if using_wandb:
             wandb.log(
@@ -518,6 +525,9 @@ if __name__ == "__main__":
                     "test_loss": test_loss,
                     "test_ppl": test_ppl,
                     "eval_result": eval_result,
+                    "fw-bleu-4": eval_result["fw-bleu-4"],
+                    "bw-bleu-4": eval_result["bw-bleu-4"],
+                    "fw-bw-bleu-4": eval_result["fw-bw-bleu-4"],
                 }
             )
         print(
@@ -527,8 +537,4 @@ if __name__ == "__main__":
                 eval_result["bw-bleu-4"],
                 eval_result["fw-bw-bleu-4"],
             )
-        )
-        print(
-            "        test_set, write inference results to output_%s.txt"
-            % args.decode_strategy
         )
