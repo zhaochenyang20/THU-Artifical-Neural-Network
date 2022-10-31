@@ -34,8 +34,10 @@ class TfmrAttention(nn.Module):
         max_positions = config.max_position_embeddings
         self.register_buffer(
             "bias",
+            #! Warning!
             # TODO START
             # define the bias term for constructing the causal mask (i.e., seeing only prefix tokens).
+            torch.ones((1, 1, max_positions, max_positions), dtype = int).tril()
             # TODO END
         )
         self.register_buffer("masked_bias", torch.tensor(-1e4))
@@ -48,7 +50,6 @@ class TfmrAttention(nn.Module):
             raise ValueError(
                 f"`embed_dim` must be divisible by num_heads (got `embed_dim`: {self.embed_dim} and `num_heads`: {self.num_heads})."
             )
-
         self.scale_attn_weights = config.scale_attn_weights
         self.c_attn = TransposeLinear(3 * self.embed_dim, self.embed_dim)
         self.c_proj = TransposeLinear(self.embed_dim, self.embed_dim)
@@ -59,31 +60,37 @@ class TfmrAttention(nn.Module):
         self.pruned_heads = set()
 
     def _attn(self, query, key, value):
+        #! Warning
         # TODO START
         # implement the multi-head mask self-attnetion mechanism
-        attn_weights = 
+        attn_weights = torch.matmul(query, key.transpose(-1, -2))
 
         if self.scale_attn_weights:
             attn_weights = attn_weights / (float(value.size(-1)) ** 0.5)
 
-        causal_mask = 
+        query_size, key_size = query.shape[-2], key.shape[-2]
+        causal_mask = self.bias[:, :, key_size - query_size : key_size, : key_size].to(torch.bool)
         attn_weights = torch.where(causal_mask, attn_weights, self.masked_bias.to(attn_weights.dtype))
 
-        attn_weights = 
+        attn_weights = F.softmax(attn_weights, dim = -1)
         attn_weights = self.attn_dropout(attn_weights)
-        attn_output = 
+        attn_output = torch.matmul(attn_weights, value)
 
         return attn_output, attn_weights
         # TODO END
 
     def _split_heads(self, tensor, num_heads, attn_head_size):
+        #! Warning
         # TODO START
-        # Splits hidden_size dim into attn_head_size and num_heads
+        return tensor.reshape(tensor.shape[: -1] + (num_heads, attn_head_size)).permute(0, 2, 1, 3)
         # TODO END
 
     def _merge_heads(self, tensor, num_heads, attn_head_size):
+        #! Warning
         # TODO START
         # Merges attn_head_size dim and num_attn_heads dim into hidden_size
+        tensor = tensor.permute(0, 2, 1, 3)
+        return tensor.reshape(tensor.shape[: -2] + (num_heads * attn_head_size, ))
         # TODO END
 
     def forward(
@@ -163,9 +170,12 @@ class TfmrBlock(nn.Module):
         attn_output = attn_outputs[0]  # output_attn: a, present, (attentions)
         outputs = attn_outputs[1:]
 
+        #! Warning
         # TODO START
         # Bulid connecetions of different modules in the Tranformer block
-        hidden_states = 
+        hidden_states = attn_output + residual
+        hidden_states, residual = self.ln_2(hidden_states), hidden_states
+        hidden_states = residual + self.mlp(hidden_states)
         # TODO END
 
         if use_cache:
@@ -203,9 +213,15 @@ class TfmrModel(nn.Module):
         device = input_ids.device if input_ids is not None else inputs_embeds.device
 
         inputs_embeds = self.wte(input_ids)
+        #! Warning
         # TODO START
         # Implement the positional embeddings. Note that the length of cache hidden states used during inference
-        position_embeds = 
+        if past_key_values is None :
+            processed_length, past_key_values = 0, [None] * len(self.h)
+        else :
+            processed_length = past_key_values[0][0].shape[-2]
+        position_embeds = self.wpe(torch.arange(start = processed_length, end = processed_length + input_shape[-1], dtype = int, device = device))
+
         # TODO END
         hidden_states = inputs_embeds + position_embeds
 
@@ -271,8 +287,15 @@ class TfmrLMHeadModel(nn.Module):
         loss = None
         if labels is not None:
             ce_loss_fct = CrossEntropyLoss(reduction="none")
+            #! Warning
             # TODO START
             # Implement the loss function. Note that you should shift logits so that tokens < n predict n
+            input_ids, logits, labels = input_ids[:, : -1], lm_logits[:, : -1, :], labels[:, 1 :]
+            loss = ce_loss_fct(logits.reshape((-1, logits.shape[-1])), labels.reshape((-1, ))).reshape(labels.shape)
+            loss_mask = (input_ids != PAD_ID).float()
+            loss_mask[:, 0] = 1.0
+            loss *= loss_mask
+            loss = (loss.sum(dim = -1) / loss_mask.sum(dim = -1)).mean()
             # TODO END
 
         return {
@@ -283,7 +306,7 @@ class TfmrLMHeadModel(nn.Module):
             "attentions": transformer_outputs["attentions"],
             "cross_attentions": transformer_outputs["cross_attentions"],
          }
-        
+
 
     def inference(self, device, PAD_ID, batch_size, maxlen, decode_strategy, temperature, top_p=1.0, top_k=50267):
         self.eval()
@@ -300,13 +323,45 @@ class TfmrLMHeadModel(nn.Module):
                     logits = logits[:, -1, :] / temperature
 
                     if decode_strategy == "top-p":
+                        #! Warning!
+                        # reference: https://medium.com/nlplanet/two-minutes-nlp-most-used-decoding-methods-for-language-models-9d44b2375612
+                        # reference: https://zhuanlan.zhihu.com/p/68383015
                         # TODO START
                         # implement top-p sampling
+                        #! logits ~ logits;
+                        #! mask
+                        # sorted_probs, sorted_indices = logits.softmax(dim = -1).sort(descending = True, dim = -1)
+                        # sorted_probs = sorted_probs.cumsum(dim = -1)
+                        # removed_sorted_indices = sorted_probs > top_p
+                        # removed_sorted_indices[:, 1 :] = removed_sorted_indices[:, : -1].clone()
+                        # removed_sorted_indices[:, 0] = False
+                        # for batch_index in range(len(removed_sorted_indices)) :
+                        #     logits[batch_index][sorted_indices[batch_index][removed_sorted_indices[batch_index]]] = -1E10
+
+                        sorted_logits, sorted_indices = torch.sort(logits, descending=False)
+                        cumulative_probs = sorted_logits.softmax(dim=-1).cumsum(dim=-1)
+
+                        # Remove tokens with cumulative top_p above the threshold (token with 0 are kept)
+                        sorted_indices_to_remove = cumulative_probs <= (1 - self.top_p)
+                        if self.min_tokens_to_keep > 1:
+                            # Keep at least min_tokens_to_keep
+                            sorted_indices_to_remove[..., -self.min_tokens_to_keep :] = 0
+
+                        # scatter sorted tensors to original indexing
+                        indices_to_remove = sorted_indices_to_remove.scatter(1, sorted_indices, sorted_indices_to_remove)
+                        logits = logits.masked_fill(indices_to_remove, self.filter_value)
                         # TODO END
                     elif decode_strategy == "top-k":
                         # TODO START
                         # implement top-k sampling
+                        #! HGF
+                        top_k = min(max(self.top_k, self.min_tokens_to_keep), logits.size(-1))  # Safety check
+                        # Remove all tokens with a probability less than the last token of the top-k
+                        indices_to_remove = logits < torch.topk(logits, top_k)[0][..., -1, None]
+                        logits = logits.masked_fill(indices_to_remove, self.filter_value)
                         # TODO END
+
+
                     prob = logits.softmax(dim=-1) # shape: (batch_size, num_vocabs)
                     now_token = torch.multinomial(prob, 1)[:, :1] # shape: (batch_size)
 
@@ -322,4 +377,3 @@ class TfmrLMHeadModel(nn.Module):
                 pro_allgen[-1].append(idx)
         self.train() # return to training mode
         return pro_allgen
-                
