@@ -341,8 +341,12 @@ if __name__ == "__main__":
     print(f"wandb name is {wandb_run_name}")
 
     if using_wandb:
+<<<<<<< HEAD
         # print('========',wandb_run_name)
         wandb.init(project="Text-Gen", entity="eren-zhao", name=wandb_run_name)
+=======
+        wandb.init(project="Transformer-Gen", entity="eren-zhao", name=wandb_run_name)
+>>>>>>> 8af557d92ce2daf6edf815e253ed21c0b7cd662a
         wandb.config = {
             "name": args.name,
             "model_config": model_config,
