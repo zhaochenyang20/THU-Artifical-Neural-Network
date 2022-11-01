@@ -55,7 +55,7 @@ def parser_args():
     parser.add_argument(
         "--batch_size",
         type=int,
-        default=64,
+        default=128,
         help="The number of batch_size. Default: 32",
     )
     parser.add_argument(
@@ -308,17 +308,37 @@ if __name__ == "__main__":
             print("Created model with fresh parameters.")
             with open(args.model_config) as fin:
                 model_config = json.load(fin)
-                model_config["num_layers"] = args.num_layers
+                print("layer num is " + args.num_layers)
+                model_config["n_layer"] = args.num_layers
+                if model_config["n_layer"] == 12:
+                    args.batch_size = 64
                 config = ModelConfig(**model_config)
-            wandb_run_name = f"{model_config['n_layer']}"
+            wandb_run_name = f"{model_config['n_layer']}_{args.batch_size}"
         else:
             #! 用 full 的话，batch_size = 64 会炸
-            wandb_run_name = str(pretrain_dir).split("/")[-1].strip(".tar")
-            if wandb_run_name == "full":
+            try:
+                if "\\" in pretrain_dir:
+                    wandb_run_name = str(pretrain_dir).split("\\")[-1][:-4]
+                elif "/" in pretrain_dir:
+                    wandb_run_name = str(pretrain_dir).split("/")[-1][:-4]
+            except:
+                wandb_run_name = pretrain_dir
+
+            if "full" in wandb_run_name:
                 args.batch_size = 48
                 wandb_run_name = wandb_run_name + f"_bs{args.batch_size}"
     else:
-        test_model = str(test).split("/")[-1].strip(".tar")
+        try:
+            test_model = str(test).split("\\")[-1][:-4]
+        except:
+            test_model = test
+        try:
+            if "\\" in test:
+                test_model = str(test).split("\\")[-1][:-4]
+            elif "/" in test:
+                test_model = str(test).split("/")[-1][:-4]
+        except:
+            test_model = test
         wandb_run_name = f"{test_model}_{decode_strategy}_{temperature}_{top_p}_{top_k}"
 
     args.name = wandb_run_name
@@ -377,7 +397,6 @@ if __name__ == "__main__":
         model.to(device)
         if using_wandb:
             wandb.watch(model)
-        print(model)
 
         optimizer = optim.Adam(
             model.parameters(), lr=args.learning_rate, weight_decay=0
@@ -494,7 +513,6 @@ if __name__ == "__main__":
         model.to(device)
         if using_wandb:
             wandb.watch(model)
-        print(model)
         test_loss, test_ppl = fast_evaluate(
             model=model,
             data=data["test"],

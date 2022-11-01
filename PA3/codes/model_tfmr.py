@@ -365,7 +365,6 @@ class TfmrLMHeadModel(nn.Module):
                             sorted_indices, sorted_indices_to_remove
                         )
 
-
                         logits = logits.reshape(-1)
                         logits = torch.index_fill(
                             logits, 0, indices_to_remove, -float("inf")
