@@ -308,10 +308,8 @@ if __name__ == "__main__":
             print("Created model with fresh parameters.")
             with open(args.model_config) as fin:
                 model_config = json.load(fin)
-                print("layer num is " + args.num_layers)
+                print("layer num is " + str(args.num_layers))
                 model_config["n_layer"] = args.num_layers
-                # if model_config["n_layer"] == 12:
-                #     args.batch_size = 64
                 config = ModelConfig(**model_config)
             wandb_run_name = f"{model_config['n_layer']}_{args.batch_size}"
         else:
