@@ -310,8 +310,8 @@ if __name__ == "__main__":
                 model_config = json.load(fin)
                 print("layer num is " + args.num_layers)
                 model_config["n_layer"] = args.num_layers
-                if model_config["n_layer"] == 12:
-                    args.batch_size = 64
+                # if model_config["n_layer"] == 12:
+                #     args.batch_size = 64
                 config = ModelConfig(**model_config)
             wandb_run_name = f"{model_config['n_layer']}_{args.batch_size}"
         else:
@@ -324,9 +324,7 @@ if __name__ == "__main__":
             except:
                 wandb_run_name = pretrain_dir
 
-            if "full" in wandb_run_name:
-                args.batch_size = 48
-                wandb_run_name = wandb_run_name + f"_bs{args.batch_size}"
+            wandb_run_name = wandb_run_name + f"_bs{args.batch_size}"
     else:
         try:
             test_model = str(test).split("\\")[-1][:-4]
@@ -514,6 +512,9 @@ if __name__ == "__main__":
         model.to(device)
         if using_wandb:
             wandb.watch(model)
+        print("Start testing.")
+
+        print("testing batch_size is: " + str(args.batch_size))
         test_loss, test_ppl = fast_evaluate(
             model=model,
             data=data["test"],

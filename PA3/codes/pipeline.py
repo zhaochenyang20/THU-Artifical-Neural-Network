@@ -4,16 +4,16 @@ import subprocess
 
 
 def train_models():
-    layers = [3, 12]
-    for layer in layers:
-        subprocess.run(f"python main.py --num_layers={layer} --using_wandb", shell=True)
-    pretrained_ckpts = ["./ckpt/full.tar", "./ckpt/primary.tar"]
-    for pretrained_ckpt in pretrained_ckpts:
-        subprocess.run(
-            f"python main.py --pretrain_dir={pretrained_ckpt} --using_wandb",
-            shell=True,
-        )
-
+    skracth_experiments = [(3, 64), (12, 32)]
+    for layer, batch_size in skracth_experiments:
+        subprocess.run(f"python main.py --num_layers={layer} --batch_size={batch_size} --using_wandb", shell=True)
+    pretrained_experiments = [("./ckpt/full.tar", 48), ("./ckpt/primary.tar", 128)]
+    for pretrained_ckpt, batch_size in pretrained_experiments:
+        print(f"python main.py --pretrain_dir={pretrained_ckpt} --batch_size={batch_size} --using_wandb")
+        # subprocess.run(
+        #     f"python main.py --pretrain_dir={pretrained_ckpt} --batch_size={batch_size} --using_wandb",
+        #     shell=True,
+        # )
 
 def test_models():
     k_s = [30, 40, 50]
@@ -37,13 +37,17 @@ def test_models():
             if model.endswith(".tar"):
                 model_dir = model_path / model
                 all_models.append(str(model_dir))
-    for experiment in experiments:
-        decode_strategy, temperature, p, k = experiment
+    for decode_strategy, temperature, p, k in experiments:
         for model in all_models:
-            subprocess.run(
-                f"python main.py --test {model} --decode_strategy={decode_strategy} --temperature={temperature} --top_p={p} --top_k={k} --using_wandb",
-                shell=True,
-            )
+            if ("12" in model):
+                batch_size = 32
+            elif ("full" in model):
+                batch_size = 24
+            # subprocess.run(
+            #     f"python main.py --test {model} --decode_strategy={decode_strategy} --temperature={temperature} --top_p={p} --top_k={k} --using_wandb",
+            #     shell=True,
+            # )
+            print(f"python main.py --test {model} --decode_strategy={decode_strategy} --temperature={temperature} --top_p={p} --top_k={k} --using_wandb")
 
 
 if __name__ == "__main__":
