@@ -324,9 +324,7 @@ if __name__ == "__main__":
             except:
                 wandb_run_name = pretrain_dir
 
-            if "full" in wandb_run_name:
-                args.batch_size = 48
-                wandb_run_name = wandb_run_name + f"_bs{args.batch_size}"
+            wandb_run_name = wandb_run_name + f"_bs{args.batch_size}"
     else:
         try:
             test_model = str(test).split("\\")[-1][:-4]
@@ -513,6 +511,9 @@ if __name__ == "__main__":
         model.to(device)
         if using_wandb:
             wandb.watch(model)
+        print("Start testing.")
+
+        print("testing batch_size is: " + str(args.batch_size))
         test_loss, test_ppl = fast_evaluate(
             model=model,
             data=data["test"],

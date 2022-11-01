@@ -10,10 +10,10 @@ def train_models():
     pretrained_experiments = [("./ckpt/full.tar", 48), ("./ckpt/primary.tar", 128)]
     for pretrained_ckpt, batch_size in pretrained_experiments:
         print(f"python main.py --pretrain_dir={pretrained_ckpt} --batch_size={batch_size} --using_wandb")
-        subprocess.run(
-            f"python main.py --pretrain_dir={pretrained_ckpt} --batch_size={batch_size} --using_wandb",
-            shell=True,
-        )
+        # subprocess.run(
+        #     f"python main.py --pretrain_dir={pretrained_ckpt} --batch_size={batch_size} --using_wandb",
+        #     shell=True,
+        # )
 
 def test_models():
     k_s = [30, 40, 50]
@@ -39,10 +39,14 @@ def test_models():
                 all_models.append(str(model_dir))
     for decode_strategy, temperature, p, k in experiments:
         for model in all_models:
-            subprocess.run(
-                f"python main.py --test {model} --decode_strategy={decode_strategy} --temperature={temperature} --top_p={p} --top_k={k} --using_wandb",
-                shell=True,
-            )
+            if ("12" in model):
+                batch_size = 32
+            elif ("full" in model):
+                batch_size = 24
+            # subprocess.run(
+            #     f"python main.py --test {model} --decode_strategy={decode_strategy} --temperature={temperature} --top_p={p} --top_k={k} --using_wandb",
+            #     shell=True,
+            # )
             print(f"python main.py --test {model} --decode_strategy={decode_strategy} --temperature={temperature} --top_p={p} --top_k={k} --using_wandb")
 
 
