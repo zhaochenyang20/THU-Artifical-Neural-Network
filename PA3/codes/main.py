@@ -125,7 +125,7 @@ def parser_args():
     parser.add_argument(
         "--waiting_epoch",
         type=int,
-        default=5,
+        default=3,
         help="The epoch to start waiting for the tarining to end. Default: 5",
     )
     parser.add_argument(
@@ -496,7 +496,9 @@ if __name__ == "__main__":
                     )
                 print("Validation loss: %.3f, becomes larger. Stop training." % val_ppl)
                 waiting_epoch += 1
-                if waiting_epoch >= waiting_epoch:
+                print()
+                print("waiting_epoch is " + str(waiting_epoch))
+                if waiting_epoch >= args.waiting_epoch:
                     break
 
     else:

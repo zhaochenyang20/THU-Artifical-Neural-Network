@@ -13,8 +13,7 @@ def train_models():
         print(
             f"python main.py --num_layers={layer} --batch_size={batch_size} --using_wandb",
         )
-    pretrained_experiments = [("./ckpt/full.tar", 48), ("./ckpt/primary.tar", 192)]
-    pretrained_experiments = [pretrained_experiments[1]]
+    pretrained_experiments = [("./ckpt/full.tar", 58), ("./ckpt/primary.tar", 128)]
     for pretrained_ckpt, batch_size in pretrained_experiments:
         print(
             f"python main.py --pretrain_dir={pretrained_ckpt} --batch_size={batch_size} --using_wandb"
