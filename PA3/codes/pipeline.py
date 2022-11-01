@@ -45,12 +45,7 @@ def test_models():
                 all_models.append(str(model_dir))
     for decode_strategy, temperature, p, k in experiments:
         for model in all_models:
-            if "12" in model:
-                batch_size = 32
-            elif "full" in model:
-                batch_size = 32
-            else:
-                batch_size = 64
+            batch_size = 128
             os.system(
                 f"python main.py --test {model} --decode_strategy={decode_strategy} --temperature={temperature} --top_p={p} --top_k={k} --batch_size={batch_size} --using_wandb"
             )
