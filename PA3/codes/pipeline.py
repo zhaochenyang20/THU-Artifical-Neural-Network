@@ -4,11 +4,14 @@ import subprocess
 
 
 def train_models():
-    skracth_experiments = [(3, 64), (12, 32)]
+    skracth_experiments = [(3, 128), (12, 64)]
     for layer, batch_size in skracth_experiments:
         subprocess.run(
             f"python main.py --num_layers={layer} --batch_size={batch_size} --using_wandb",
             shell=True,
+        )
+        print(
+            f"python main.py --num_layers={layer} --batch_size={batch_size} --using_wandb",
         )
     pretrained_experiments = [("./ckpt/full.tar", 48), ("./ckpt/primary.tar", 192)]
     pretrained_experiments = [pretrained_experiments[1]]
