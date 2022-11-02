@@ -22,7 +22,7 @@ def train_models():
         )
 
 
-def basic_test_models():
+def basic_test_models(batch_size=160):
     k_s = [30, 40, 50]
     p_s = [0.7, 0.8, 0.9]
     temperatures = [0.7, 0.85, 1.0]
@@ -46,7 +46,6 @@ def basic_test_models():
                 all_models.append(str(model_dir))
     for decode_strategy, temperature, p, k in experiments:
         for model in all_models:
-            batch_size = 128
             os.system(
                 f"python main.py --test {model} --decode_strategy={decode_strategy} --temperature={temperature} --top_p={p} --top_k={k} --batch_size={batch_size} --using_wandb"
             )
@@ -55,7 +54,7 @@ def basic_test_models():
             )
 
 
-def test_top_p():
+def test_top_p(batch_size=160):
     k_s = [30, 40, 50]
     p_s = [0.7, 0.8, 0.9]
     temperatures = [0.7, 0.85, 1.0]
@@ -76,7 +75,6 @@ def test_top_p():
                 all_models.append(str(model_dir))
     for decode_strategy, temperature, p, k in experiments:
         for model in all_models:
-            batch_size = 128
             os.system(
                 f"python main.py --test {model} --decode_strategy={decode_strategy} --temperature={temperature} --top_p={p} --top_k={k} --batch_size={batch_size} --using_wandb"
             )
@@ -85,7 +83,7 @@ def test_top_p():
             )
 
 
-def test_top_k():
+def test_top_k(batch_size=160):
     k_s = [30, 40, 50]
     p_s = [0.7, 0.8, 0.9]
     temperatures = [0.7, 0.85, 1.0]
@@ -106,7 +104,6 @@ def test_top_k():
                 all_models.append(str(model_dir))
     for decode_strategy, temperature, p, k in experiments:
         for model in all_models:
-            batch_size = 128
             os.system(
                 f"python main.py --test {model} --decode_strategy={decode_strategy} --temperature={temperature} --top_p={p} --top_k={k} --batch_size={batch_size} --using_wandb"
             )
@@ -115,7 +112,7 @@ def test_top_k():
             )
 
 
-def test_temperature():
+def test_temperature(batch_size=160):
     k_s = [30, 40, 50]
     p_s = [0.7, 0.8, 0.9]
     temperatures = [0.7, 0.85, 1.0]
@@ -136,7 +133,6 @@ def test_temperature():
                 all_models.append(str(model_dir))
     for decode_strategy, temperature, p, k in experiments:
         for model in all_models:
-            batch_size = 128
             os.system(
                 f"python main.py --test {model} --decode_strategy={decode_strategy} --temperature={temperature} --top_p={p} --top_k={k} --batch_size={batch_size} --using_wandb"
             )
@@ -146,9 +142,10 @@ def test_temperature():
 
 
 def test_BLEU():
-    test_top_k()
-    test_top_p()
-    test_temperature()
+    batch_size = 160
+    test_top_k(batch_size)
+    test_top_p(batch_size)
+    test_temperature(batch_size)
 
 
 if __name__ == "__main__":
