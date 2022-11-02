@@ -142,7 +142,7 @@ def test_temperature(batch_size=160):
 
 
 def test_BLEU():
-    batch_size = 200
+    batch_size = 160
     test_top_k(batch_size)
     test_top_p(batch_size)
     test_temperature(batch_size)
