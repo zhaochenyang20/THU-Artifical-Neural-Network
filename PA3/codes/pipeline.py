@@ -1,10 +1,6 @@
 from itertools import product
 import os
 import subprocess
-from matplotlib import test
-
-from sympy import to_cnf
-
 
 def train_models():
     skracth_experiments = [(3, 128), (12, 64)]
