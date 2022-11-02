@@ -62,14 +62,14 @@ def test_BLEU(primary_bs=200, full_bs=128):
     choices = ["random", "top-p", "top-k"]
     experiments = [
         #! ("random", 1, 0, 0), 这个已经做过了
-        ("random", 0.85, 0, 0),
-        ("random", 0.7, 0, 0),
-        #! ("random", 1, 0, 0), 这个已经做过了
-        ("random", 0.85, 0, 0),
-        ("random", 0.7, 0, 0),
+        # ("random", 0.85, 0, 0),
+        # ("random", 0.7, 0, 0), # 重复了
+        #! ("top-p", 1, 0.9, 0), 这个已经做过了
+        ("top-p", 1, 0.8, 0),
+        ("top-p", 1, 0.9, 0),
        #! ("top-k", 1, 0, 40), 这个已经做过了
-        ("top-k", 1, 0, 30),
-        ("top-k", 1, 0, 20),
+        # ("top-k", 1, 0, 30),
+        # ("top-k", 1, 0, 20),
     ]
     from pathlib import Path
 
