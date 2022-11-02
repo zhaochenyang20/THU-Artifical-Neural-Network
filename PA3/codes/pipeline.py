@@ -93,7 +93,17 @@ def test_BLEU(primary_bs=200, full_bs=128):
                 f"python main.py --test {model} --decode_strategy={decode_strategy} --temperature={temperature} --top_p={p} --top_k={k} --batch_size={batch_size} --using_wandb"
             )
 
+def test_ppl(batch_size=230):
+    temperatures = [0.4, 0.55, 0.7, 0.85, 1.0, 1.15, 1.3, 1.45, 1.6]
+    model = "./train_ckpt/3_128.tar"
+    for temperature in temperatures:
+        os.system(
+            f"python main.py --test {model} --decode_strategy random --temperature={temperature} --top_p=0 --top_k=0 --batch_size={batch_size} --using_wandb"
+        )
+        print(
+            f"python main.py --test {model} --decode_strategy random --temperature={temperature} --top_p=0 --top_k=0 --batch_size={batch_size} --using_wandb"
+        )
 
 if __name__ == "__main__":
-    test_BLEU(200, 128)
-
+    # test_BLEU(200, 128)
+    test_ppl(230)
