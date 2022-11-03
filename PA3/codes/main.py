@@ -154,7 +154,7 @@ def parser_args():
         args.data_dir,
         args.train_dir,
         args.pretrain_dir,
-        args.maxlen,
+        args.max_len,
         args.decode_strategy,
         args.temperature,
         args.top_p,
@@ -252,19 +252,19 @@ def evaluate(gen_ids, truth_ids, cpu_count=20):
     return res
 
 
-def load_data(path, tokenizer, PAD_ID, field_list=["train", "dev", "test"], maxlen=40):
+def load_data(path, tokenizer, PAD_ID, field_list=["train", "dev", "test"], max_len=40):
     data, data_remove_pad = {}, {}
     for name in field_list:
         data[name], data_remove_pad[name] = [], []
         with open("%s/%s.txt" % (path, name)) as fin:
             for line in fin:
                 tokens = tokenizer.encode(line.strip())
-                if len(tokens) < maxlen:
+                if len(tokens) < max_len:
                     data[name].append(
-                        [PAD_ID] + tokens + [PAD_ID] * (maxlen - len(tokens))
+                        [PAD_ID] + tokens + [PAD_ID] * (max_len - len(tokens))
                     )
                 else:
-                    data[name].append([PAD_ID] + tokens[:maxlen])
+                    data[name].append([PAD_ID] + tokens[:max_len])
                 data_remove_pad[name].append(tokens)
     return data, data_remove_pad
 
@@ -383,7 +383,7 @@ if __name__ == "__main__":
         tokenizer=tokenizer,
         PAD_ID=PAD_ID,
         field_list=["train", "dev", "test"],
-        maxlen=args.maxlen,
+        max_len=args.max_len,
     )
 
     if args.test is None:
@@ -557,7 +557,7 @@ if __name__ == "__main__":
             device=device,
             PAD_ID=PAD_ID,
             batch_size=args.batch_size,
-            maxlen=args.maxlen,
+            max_len=args.max_len,
             decode_strategy=args.decode_strategy,
             temperature=args.temperature,
             top_p=args.top_p,
