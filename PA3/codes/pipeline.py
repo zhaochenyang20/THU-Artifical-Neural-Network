@@ -23,7 +23,7 @@ def train_models():
         )
 def train_extraction():
     experiments = [1 , 2, 3]
-    batch_size = 230
+    batch_size = 128
     for experiment in experiments:
         print(
             f"python main.py --pretrain_dir=./ckpt/full.tar --extract_layer={experiment} --batch_size={batch_size} --using_wandb"
