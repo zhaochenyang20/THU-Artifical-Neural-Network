@@ -134,6 +134,12 @@ def parser_args():
         default=3,
         help="The number of layers for the transformer. Default: 3",
     )
+    parser.add_argument(
+        "--extract_layer",
+        type=int,
+        default=0,
+        help="The number of extract layers for the transformer. Default: 0",
+    )
     args = parser.parse_args()
     return (
         args,
@@ -156,6 +162,7 @@ def parser_args():
         args.using_wandb,
         args.waiting_epoch,
         args.num_layers,
+        args.extract_layer
     )
 
 
@@ -302,8 +309,12 @@ if __name__ == "__main__":
         using_wandb,
         waiting_epoch,
         num_layers,
+        extract_layer,
     ) = parser_args()
-    if args.test is None:
+    if extract_layer != 0:
+        extarction_dict = {1: "first", 2: "last" , 3 : "skip"}
+        wandb_run_name = f"extraction_{extarction_dict[extract_layer]}"
+    elif args.test is None:
         if args.pretrain_dir is None:
             print("Created model with fresh parameters.")
             with open(args.model_config) as fin:
@@ -324,10 +335,6 @@ if __name__ == "__main__":
 
             wandb_run_name = wandb_run_name + f"_bs{args.batch_size}"
     else:
-        try:
-            test_model = str(test).split("\\")[-1][:-4]
-        except:
-            test_model = test
         try:
             if "\\" in test:
                 test_model = str(test).split("\\")[-1][:-4]
@@ -380,7 +387,32 @@ if __name__ == "__main__":
     )
 
     if args.test is None:
-        if args.pretrain_dir is None:
+        if args.extract_layer != 0:
+            print("Loading Model from the extracted layers of full model")
+            with open(args.model_config) as fin:
+                model_config = json.load(fin)
+                config = ModelConfig(**model_config)
+            model = TfmrLMHeadModel(config)
+            init_weights_func = get_init_weights_func(config=config)
+            model.apply(init_weights_func)
+            state_dict = model.state_dict()
+            full_model = torch.load(args.pretrain_dir)
+            ckpt = full_model.state_dict()
+            mappings = [{"0": "0", "1": "1", "2": "2"}, {"0": "9", "1": "10", "2": "11"}, {"0": "0", "1": "5", "2": "11"}]
+            mapping = mappings[args.extract_layer]
+            for key in state_dict.keys():
+                if key.startwith("transformer.h"):
+                    name = key.split(".")
+                    name[2] = mapping[name[2]]
+                    name = ".".join(name)
+                else:
+                    name = key
+
+                state_dict[key] = ckpt[name]
+
+            model.load_state_dict(state_dict)
+
+        elif args.pretrain_dir is None:
             model = TfmrLMHeadModel(config)
             init_weights_func = get_init_weights_func(config=config)
             model.apply(init_weights_func)
@@ -417,9 +449,7 @@ if __name__ == "__main__":
                 batched_data = torch.tensor(data["train"][st:ed]).to(device)
 
                 optimizer.zero_grad()
-                loss = model(
-                    input_ids=batched_data, labels=batched_data, PAD_ID=PAD_ID
-                )["loss"]
+                loss = model(input_ids=batched_data, labels=batched_data, PAD_ID=PAD_ID)["loss"]
                 loss.backward()
                 optimizer.step()
                 losses.append(loss.tolist())

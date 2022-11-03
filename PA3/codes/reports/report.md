@@ -76,3 +76,132 @@ temperatures = [0.4, 0.55, 0.7, 0.85, 1.0, 1.15, 1.3, 1.45, 1.6]
 model = "./train_ckpt/3_128.tar"
 ```
 
+为了方便模型的横向对比，我选择了 12_64 模型（Tfmr-scratch）与 full_bs58 模型（Tfmr-finetune）进行对比，同时三种 decoding 方式选用 random_1.0_0.0_0、random_0.85_0.0_0、random_0.7_0.0_0、top-p_1.0_0.9_0、top-p_0.7_0.9_0、top-p_1.0_0.7_0、top-k_0.7_0.0_40、top-k_1.0_0.0_40、top-k_1.0_0.0_20。
+
+
+
+
+```tex
+#-------------  full_bs58_random_1.0_0.0_0  -------------
+A close up of a red bus driver with copter on a snowy night .
+Two buses are traveling across a dirt trail .
+A woman wearing a leather jacket sitting on a bench with her family in the background .
+A giraffe walking past a fence and a fence back in its habitat in an outdoors setting .
+A couple of white and blue buses sitting along a street .
+A bus driving down a corner near red buses .
+A man sits with an airplane on the runway .
+An airplane parked on the tarmac at an airport .
+A bright yellow fire hydrant in front of a door .
+A bus that is sitting next to another bus on the side of the road .
+
+
+#-------------  full_bs58_random_0.85_0.0_0  -------------
+A close up of a red bus and a cop car .
+A green transit bus parked along a sidewalk in front of a tree .
+A woman wearing a leather jacket sitting on a bench .
+A giraffe walking past a fence and a fence back in its habitat .
+A couple of giraffe walking through grassy area next to tree .
+A bus driving down a street near cars and buildings .
+A man sits on a park bench with a motorcycle .
+A woman sitting on top of a bench by herself .
+A bright yellow fire hydrant in front of a large building .
+A bus that is sitting in front of a truck next to a bus stop .
+
+
+#-------------  full_bs58_random_0.7_0.0_0  -------------
+A close up of a red bus and a cop car .
+A green transit bus parked on the side of the road .
+A woman sitting on a bench near a cup of coffee .
+A giraffe walking past a fence and a fence post .
+A couple of giraffe walking through a forest , a tree , and a few other animals .
+A bus driving down a street near cars and buildings .
+A man sits on a bench while waiting for the bus .
+A woman sitting on top of a bench by herself .
+A man is sitting on a bench with his dog .
+A bus that is sitting in front of a truck .
+
+
+#-------------  full_bs58_top-p_1.0_0.9_0  -------------
+A close up of a red bus driver with a woman on a leash .
+Two buses are traveling across a dirt trail .
+A woman wearing a leather jacket sitting on a bench with her family in the background .
+A giraffe walking past a fence and a fence on a sunny day .
+A couple of white and blue buses sitting in front of a bunch of buildings .
+A bus driving down a street near cars and buildings .
+A man sits on a park bench with a motorcycle .
+An airplane parked on the tarmac at an airport .
+A bright yellow fire hydrant in front of a door .
+A bus that is sitting next to another bus on the side of the road .
+
+
+#-------------  full_bs58_top-p_0.7_0.9_0  -------------
+A close up of a red bus and a red fire hydrant .
+A green bench sitting on top of a grassy hill .
+A woman sitting on a bench near a green bench .
+A giraffe walking through a field next to a tree .
+A couple of giraffe walking through a forest , a tree , and a few other animals .
+A bus driving down a street near a traffic light .
+A man sits on a bench while reading a book .
+A woman sitting on top of a bench by a traffic light .
+A man is sitting on a bench with his dog .
+A bus that is sitting in front of a truck .
+
+
+#-------------  full_bs58_top-p_1.0_0.7_0  -------------
+A close up of a red double decker bus .
+A green bench sitting on top of a grassy hill .
+A woman sitting on a bench near a green bench .
+A giraffe walking through a wooded area near a stone wall .
+A couple of white and blue buses sitting in front of a store .
+A bus driving down a street near tall buildings .
+A man sits on a bench while reading a book .
+A woman sitting on a bench in a park .
+A bench sitting in front of a forest and some shrubs .
+A bus that is sitting in front of a truck .
+
+
+#-------------  full_bs58_top-k_0.7_0.0_40  -------------
+A close up of a red bus and a red fire hydrant .
+A green transit bus parked on the side of the road .
+A woman sitting on a bench near a green bench .
+A giraffe walking past a fence and a fence post .
+A couple of giraffe walking through a forest , a tree , and a few other animals .
+A bus driving down a street near cars and buildings .
+A man sits on a bench while waiting for the bus .
+A woman sitting on top of a bench by herself .
+A man is sitting on a bench with his dog .
+A bus that is sitting in front of a truck .
+
+
+#-------------  full_bs58_top-k_1.0_0.0_40  -------------
+A close up of a red bus driver with a woman on a leash wearing sunglasses .
+Two buses are traveling across a dirt trail .
+A woman wearing a leather jacket sitting on a bench with her family in the background .
+A giraffe walking past a fence and a fence on a sunny day in a sunny part of the country .
+A couple of white and blue buses sitting along a street .
+A bus driving down a street near red buses .
+A man sits with an airplane on the runway .
+An airplane parked on the tarmac at an airport .
+A bench near a grassy plain with trees in the background .
+A bus that is sitting next to another bus on the side of the road .
+
+
+#-------------  full_bs58_top-k_1.0_0.0_20  -------------
+A group of men standing on the street with their bags on a bench .
+Two buses are traveling across a dirt trail .
+A woman wearing a hat sits on a bench outside .
+A giraffe walking past a fence and a fence on a sunny day in a sunny part of the country .
+A couple of white and blue buses sitting along a street .
+A bus driving down a street near cars and buildings .
+A man sits with an airplane on the runway .
+An airplane parked on the tarmac at an airport .
+A bench near a wall with some buildings in the background .
+A bus that is sitting next to another bus on the side of the road .
+```
+
+
+
+```
+
+```
+
