@@ -127,10 +127,10 @@ if __name__ == '__main__':
 				best_val_acc = val_acc
 				best_epoch = epoch
 				test_acc, test_loss = valid_epoch(mlp_model, X_test, y_test)
-				# with open(os.path.join(args.train_dir, 'checkpoint_{}.pth.tar'.format(epoch)), 'wb') as fout:
-				# 	torch.save(mlp_model, fout)
-				# with open(os.path.join(args.train_dir, 'checkpoint_0.pth.tar'), 'wb') as fout:
-				# 	torch.save(mlp_model, fout)
+				# with open(os.path.join(args.train_dir, 'checkpoint_{}.pth.tar'.format(epoch)), 'wb') as f:
+				# 	torch.save(mlp_model, f)
+				# with open(os.path.join(args.train_dir, 'checkpoint_0.pth.tar'), 'wb') as f:
+				# 	torch.save(mlp_model, f)
 
 			epoch_time = time.time() - start_time
 			print("Epoch " + str(epoch) + " of " + str(args.num_epochs) + " took " + str(epoch_time) + "s")

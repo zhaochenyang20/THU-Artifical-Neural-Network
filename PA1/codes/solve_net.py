@@ -1,7 +1,8 @@
 from utils import LOG_INFO, onehot_encoding, calculate_acc
 import numpy as np
-#! TODO add readme
+# ! TODO add readme
 import wandb
+
 
 def data_iterator(x, y, batch_size, shuffle=True):
     indx = list(range(len(x)))
@@ -14,7 +15,6 @@ def data_iterator(x, y, batch_size, shuffle=True):
 
 
 def train_net(model, loss, config, inputs, labels, batch_size, disp_freq):
-
     iter_counter = 0
     loss_list = []
     acc_list = []
@@ -23,7 +23,7 @@ def train_net(model, loss, config, inputs, labels, batch_size, disp_freq):
         target = onehot_encoding(label, 10)
         iter_counter += 1
 
-        # forward net
+        # ! forward net
         output = model.forward(input)
         # calculate loss
         loss_value = loss.forward(output, target)
@@ -40,8 +40,9 @@ def train_net(model, loss, config, inputs, labels, batch_size, disp_freq):
         acc_list.append(acc_value)
 
         if iter_counter % disp_freq == 0:
-            msg = '  Training iter %d, batch loss %.4f, batch acc %.4f' % (iter_counter, np.mean(loss_list), np.mean(acc_list))
-            #! TODO add readme
+            msg = '  Training iter %d, batch loss %.4f, batch acc %.4f' % (
+                iter_counter, np.mean(loss_list), np.mean(acc_list))
+            #  TODO add readme
             # wandb.log({'train_accuracy': np.mean(acc_list), 'train_loss': np.mean(loss_list)})
             loss_list = []
             acc_list = []
@@ -62,5 +63,5 @@ def test_net(model, loss, inputs, labels, batch_size):
 
     msg = '    Testing, total mean loss %.5f, total acc %.5f' % (np.mean(loss_list), np.mean(acc_list))
     LOG_INFO(msg)
-    #! TODO add readme
+    # ! TODO add readme
     # wandb.log({'test_accuracy': np.mean(acc_list), 'test_loss': np.mean(loss_list)})
