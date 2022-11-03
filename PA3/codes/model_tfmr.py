@@ -95,7 +95,7 @@ class TfmrAttention(nn.Module):
         # out_shape = in_shape[:-1] + (num_heads, attn_head_size)
         # tensor = tensor.view(out_shape)
         # tensor = tensor.permute(0, 2, 1, 3)
-        in_shape = tensor.shape()
+        in_shape = tensor.size()
         out_shape = in_shape[:-1] + (num_heads, attn_head_size)
         tensor = tensor.view(out_shape)
         tensor = tensor.permute(0, 2, 1, 3)
