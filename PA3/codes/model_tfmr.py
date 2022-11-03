@@ -324,7 +324,7 @@ class TfmrLMHeadModel(nn.Module):
         device,
         PAD_ID,
         batch_size,
-        maxlen,
+        max_len,
         decode_strategy,
         temperature,
         top_p=1.0,
@@ -339,7 +339,7 @@ class TfmrLMHeadModel(nn.Module):
                 )
                 past_key_values = None
                 output_ids = input_ids
-                for _ in range(maxlen):
+                for _ in range(max_len):
                     outputs = self(
                         input_ids, past_key_values=past_key_values, use_cache=True
                     )

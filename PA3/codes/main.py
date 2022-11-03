@@ -182,20 +182,6 @@ def fast_evaluate(model, data, batch_size, PAD_ID, device):
             ce_loss_fct = torch.nn.CrossEntropyLoss(reduction="none")
             # TODO START
             #! Warning
-            # Implement the Perplexity metric. Basically it should be the same as the loss function used for training the model.
-            # reference: https://huggingface.co/docs/transformers/perplexity
-            # tgt_ids = torch.tensor(data[st:ed]).to(device)[:, 1:]
-            # input_ids = input_ids[:, :-1]
-            # lm_logits = model(input_ids)["logits"] / args.temperature
-
-            # loss = ce_loss_fct(
-            #     lm_logits.reshape((-1, lm_logits.shape[-1])), tgt_ids.reshape((-1,))
-            # ).reshape(input_ids.shape)
-            # loss_mask = (input_ids != PAD_ID).float()
-            # loss_mask[:, 0] = 1.0
-            # loss *= loss_mask
-            # loss = loss.sum(dim=-1) / loss_mask.sum(dim=-1)
-
             tgt_ids = input_ids[:, 1:]
             input_ids = input_ids[:, :-1]
             lm_logits = model(input_ids)["logits"]
@@ -409,11 +395,12 @@ if __name__ == "__main__":
             full_model = torch.load(args.pretrain_dir)
             ckpt = full_model.state_dict()
             mappings = [
+                {},
                 {"0": "0", "1": "1", "2": "2"},
                 {"0": "9", "1": "10", "2": "11"},
                 {"0": "0", "1": "5", "2": "11"},
             ]
-            mapping = mappings[args.extract_layer]
+            mapping = mappings[args.extract_layer - 1]
             for key in state_dict.keys():
                 # ！ TODO 这里的 key 是什么
                 if key.startswith("transformer.h"):
