@@ -95,7 +95,7 @@ def test_BLEU(all_models, primary_bs=230, full_bs=156):
             )
 
 
-def test_ppl(primary_bs=230, full_bs=156):
+def test_ppl(primary_bs=330, full_bs=277):
     temperatures = [0.4, 0.55, 0.7, 0.85, 1.0, 1.15, 1.3, 1.45, 1.6]
     models = ["./train_ckpt/3_128.tar", "./train_ckpt/12_64.tar"]
     for temperature in temperatures:
@@ -133,7 +133,6 @@ if __name__ == "__main__":
     # train_models()
     train_extraction()
     all_models = get_all_model_path(get_extract=True)
-    basic_test_models(all_models, primary_bs=230, full_bs=156)
-    test_BLEU(all_models, primary_bs=230, full_bs=156)
-    # test_ppl(230, 156)
-    #! python main.py --test ./train_ckpt/3_128.tar --decode_strategy random --temperature=1 --top_p=0 --top_k=0 --batch_size=128
+    basic_test_models(all_models, primary_bs=330, full_bs=277)
+    test_BLEU(all_models, primary_bs=330, full_bs=277)
+    # test_ppl(330, 277)
