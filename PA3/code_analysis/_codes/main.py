@@ -43,7 +43,7 @@ parser.add_argument('--train_dir', type=str, default='./train_test',
     help='Training directory for saving model. Default: ./train')
 parser.add_argument('--pretrain_dir', type=str, default='None',
     help='Pre-Training directory for loading pretrained model. Default: None')
-parser.add_argument('--maxlen', type=int, default=35,
+parser.add_argument('--max_len', type=int, default=35,
     help='Maximum length for training/inference. Default: 35')    
 parser.add_argument('--decode_strategy', type=str, choices=["random", "top-p", "top-k"], default="random",
     help='The strategy for decoding. Can be "random", "top-p" or "top-k". Default: random')

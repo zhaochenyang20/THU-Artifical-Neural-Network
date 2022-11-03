@@ -43,7 +43,7 @@ def parser_args():
     parser.add_argument(
         "--num_epochs",
         type=int,
-        default=20,
+        default=100,
         help="Number of training epoch. Default: 20",
     )
     parser.add_argument(
@@ -90,7 +90,7 @@ def parser_args():
         help="Pre-Training directory for loading pretrained model. Default: None",
     )
     parser.add_argument(
-        "--maxlen",
+        "--max_len",
         type=int,
         default=35,
         help="Maximum length for training/inference. Default: 35",
@@ -301,7 +301,7 @@ if __name__ == "__main__":
         data_dir,
         train_dir,
         pretrain_dir,
-        maxlen,
+        max_len,
         decode_strategy,
         temperature,
         top_p,
@@ -361,7 +361,7 @@ if __name__ == "__main__":
             "data_dir": data_dir,
             "train_dir": train_dir,
             "pretrain_dir": pretrain_dir,
-            "maxlen": maxlen,
+            "max_len": max_len,
             "decode_strategy": decode_strategy,
             "temperature": temperature,
             "top_p": top_p,
@@ -401,6 +401,7 @@ if __name__ == "__main__":
             mappings = [{"0": "0", "1": "1", "2": "2"}, {"0": "9", "1": "10", "2": "11"}, {"0": "0", "1": "5", "2": "11"}]
             mapping = mappings[args.extract_layer]
             for key in state_dict.keys():
+                #！ TODO 这里的 key 是什么
                 if key.startswith("transformer.h"):
                     name = key.split(".")
                     name[2] = mapping[name[2]]
@@ -449,14 +450,12 @@ if __name__ == "__main__":
                 batched_data = torch.tensor(data["train"][st:ed]).to(device)
 
                 optimizer.zero_grad()
-                loss = model(
-                    input_ids=batched_data, labels=batched_data, PAD_ID=PAD_ID
-                )["loss"]
+                loss = model(input_ids=batched_data, labels=batched_data, PAD_ID=PAD_ID)["loss"]
                 loss.backward()
                 optimizer.step()
                 losses.append(loss.tolist())
 
-                if (batch_num) % 10 == 0:
+                if batch_num % 10 == 0:
                     taring_loss = np.mean(losses[-100:])
                     if using_wandb:
                         wandb.log(
@@ -487,8 +486,8 @@ if __name__ == "__main__":
                 os.makedirs(args.train_dir, exist_ok=True)
                 with open(
                     os.path.join(args.train_dir, "%s.tar" % args.name), "wb"
-                ) as fout:
-                    torch.save(model, fout)
+                ) as f:
+                    torch.save(model, f)
                 epoch_time = time.time() - start_time
                 print(
                     "Epoch "
@@ -565,11 +564,11 @@ if __name__ == "__main__":
             top_k=args.top_k,
         )
         os.makedirs("./test_results", exist_ok=True)
-        with open("./test_results/%s.txt" % args.name, "a+") as fout:
+        with open("./test_results/%s.txt" % args.name, "a+") as f:
             for k, output in enumerate(result):
                 out = tokenizer.decode(output)
-                fout.write(out + "\n")
-            fout.write("----------------------------------------------------\n")
+                f.write(out + "\n")
+            f.write("----------------------------------------------------\n")
         eval_result = evaluate(gen_ids=result, truth_ids=data_remove_pad["test"])
         if using_wandb:
             wandb.log(
