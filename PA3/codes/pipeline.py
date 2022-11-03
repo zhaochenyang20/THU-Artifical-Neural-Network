@@ -93,18 +93,22 @@ def test_BLEU(primary_bs=200, full_bs=128):
                 f"python main.py --test {model} --decode_strategy={decode_strategy} --temperature={temperature} --top_p={p} --top_k={k} --batch_size={batch_size} --using_wandb"
             )
 
-def test_ppl(batch_size=128):
+def test_ppl(primary_bs=200, full_bs=128):
     temperatures = [0.4, 0.55, 0.7, 0.85, 1.0, 1.15, 1.3, 1.45, 1.6]
     models = ["./train_ckpt/3_128.tar", "./train_ckpt/12_64.tar"]
-    model = models[1] #! 记得注释掉
     for temperature in temperatures:
-        os.system(
-            f"python main.py --test {model} --decode_strategy random --temperature={temperature} --top_p=0 --top_k=0 --batch_size={batch_size} --using_wandb"
-        )
-        print(
-            f"python main.py --test {model} --decode_strategy random --temperature={temperature} --top_p=0 --top_k=0 --batch_size={batch_size} --using_wandb"
-        )
+        for model in models:
+            if "3" in model:
+                batch_size = primary_bs
+            elif "12" in model:
+                batch_size = full_bs
+            os.system(
+                f"python main.py --test {model} --decode_strategy random --temperature={temperature} --top_p=0 --top_k=0 --batch_size={batch_size} --using_wandb"
+            )
+            print(
+                f"python main.py --test {model} --decode_strategy random --temperature={temperature} --top_p=0 --top_k=0 --batch_size={batch_size} --using_wandb"
+            )
 
 if __name__ == "__main__":
     # test_BLEU(200, 128)
-    test_ppl(128)
+    test_ppl(230, 156)
