@@ -38,6 +38,7 @@ class TfmrAttention(nn.Module):
             #! Warning!
             # TODO START
             # define the bias term for constructing the causal mask (i.e., seeing only prefix tokens).
+            #! 返回下三角矩阵
             torch.ones((1, 1, max_positions, max_positions), dtype=int).tril()
             # TODO END
         )
@@ -87,17 +88,31 @@ class TfmrAttention(nn.Module):
     def _split_heads(self, tensor, num_heads, attn_head_size):
         #! Warning
         # TODO START
-        return tensor.reshape(tensor.shape[:-1] + (num_heads, attn_head_size)).permute(
-            0, 2, 1, 3
-        )
+        # return tensor.reshape(tensor.shape[:-1] + (num_heads, attn_head_size)).permute(
+        #     0, 2, 1, 3
+        # )
+        # in_shape = tensor.size()
+        # out_shape = in_shape[:-1] + (num_heads, attn_head_size)
+        # tensor = tensor.view(out_shape)
+        # tensor = tensor.permute(0, 2, 1, 3)
+        in_shape = tensor.shape()
+        out_shape = in_shape[:-1] + (num_heads, attn_head_size)
+        tensor = tensor.view(out_shape)
+        tensor = tensor.permute(0, 2, 1, 3)
+        return tensor
         # TODO END
 
     def _merge_heads(self, tensor, num_heads, attn_head_size):
         #! Warning
         # TODO START
         # Merges attn_head_size dim and num_attn_heads dim into hidden_size
-        tensor = tensor.permute(0, 2, 1, 3)
-        return tensor.reshape(tensor.shape[:-2] + (num_heads * attn_head_size,))
+        # tensor = tensor.permute(0, 2, 1, 3)
+        # return tensor.reshape(tensor.shape[:-2] + (num_heads * attn_head_size,))
+        tensor = tensor.permute(0, 2, 1, 3).contiguous()
+        in_shape = tensor.size()
+        out_shape = in_shape[:-2] + (num_heads * attn_head_size,)
+        tensor = tensor.view(out_shape)
+        return tensor
         # TODO END
 
     def forward(
@@ -172,9 +187,11 @@ class TfmrBlock(nn.Module):
         #! Warning
         # TODO START
         # Bulid connecetions of different modules in the Tranformer block
-        hidden_states = attn_output + residual
-        hidden_states, residual = self.ln_2(hidden_states), hidden_states
-        hidden_states = residual + self.mlp(hidden_states)
+        # hidden_states = residual + attn_output
+        # residual = hidden_states
+
+        residual = hidden_states = attn_output + residual
+        hidden_states = residual + self.mlp(self.ln_2(hidden_states))
         # TODO END
 
         if use_cache:
@@ -218,14 +235,8 @@ class TfmrModel(nn.Module):
             processed_length, past_key_values = 0, [None] * len(self.h)
         else:
             processed_length = past_key_values[0][0].shape[-2]
-        position_embeds = self.wpe(
-            torch.arange(
-                start=processed_length,
-                end=processed_length + input_shape[-1],
-                dtype=int,
-                device=device,
-            )
-        )
+        position_ids = torch.arange(processed_length, processed_length + input_shape[-1], torch.long, device)
+        position_embeds = self.wpe(position_ids)
 
         # TODO END
         hidden_states = inputs_embeds + position_embeds
@@ -286,18 +297,13 @@ class TfmrLMHeadModel(nn.Module):
             #! Warning
             # TODO START
             # Implement the loss function. Note that you should shift logits so that tokens < n predict n
-            input_ids, logits, labels = (
-                input_ids[:, :-1],
-                lm_logits[:, :-1, :],
-                labels[:, 1:],
-            )
-            loss = ce_loss_fct(
-                logits.reshape((-1, logits.shape[-1])), labels.reshape((-1,))
-            ).reshape(labels.shape)
-            loss_mask = (input_ids != PAD_ID).float()
-            loss_mask[:, 0] = 1.0
-            loss *= loss_mask
-            loss = (loss.sum(dim=-1) / loss_mask.sum(dim=-1)).mean()
+            shift_logits = lm_logits[..., :-1, :].contiguous()
+            shift_labels = labels[..., 1:].contiguous()
+            pad_pos = torch.eq(shift_labels, PAD_ID).to(torch.float).to(labels.device)
+            pad_pos = torch.cat([torch.zeros([shift_labels.size()[0], 1]).to(labels.device), pad_pos[:, :-1]], 1)
+            loss_mask = 1. - pad_pos
+            loss = ce_loss_fct(shift_logits.view(-1, shift_logits.shape[-1]), shift_labels.view(-1))
+            loss = torch.mean(torch.sum(loss.view(shift_labels.size()[0], -1) * loss_mask, 1) / (torch.sum(loss_mask, 1) + 1e-20))
             # TODO END
 
         return {
@@ -339,6 +345,7 @@ class TfmrLMHeadModel(nn.Module):
 
                     if decode_strategy == "top-p":
                         # TODO START
+                        # Reference: https://github.com/huggingface/transformers/blob/5041bc3511d098814598cf1cfc6c6bd20e72c144/src/transformers/generation_logits_process.py
                         # implement top-p sampling
                         sorted_logits, sorted_indices = torch.sort(
                             logits, descending=True
@@ -376,6 +383,7 @@ class TfmrLMHeadModel(nn.Module):
                         # TODO END
                     elif decode_strategy == "top-k":
                         # TODO START
+                        # Reference https://github.com/huggingface/transformers/blob/5041bc3511d098814598cf1cfc6c6bd20e72c144/src/transformers/generation_logits_process.py
                         # implement top-k sampling
                         indices_to_remove = logits < torch.topk(logits, top_k, dim=1)[
                             0

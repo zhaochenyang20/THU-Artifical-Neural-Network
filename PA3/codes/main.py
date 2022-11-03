@@ -162,7 +162,7 @@ def parser_args():
         args.using_wandb,
         args.waiting_epoch,
         args.num_layers,
-        args.extract_layer
+        args.extract_layer,
     )
 
 
@@ -184,18 +184,28 @@ def fast_evaluate(model, data, batch_size, PAD_ID, device):
             #! Warning
             # Implement the Perplexity metric. Basically it should be the same as the loss function used for training the model.
             # reference: https://huggingface.co/docs/transformers/perplexity
-            tgt_ids = torch.tensor(data[st:ed]).to(device)[:, 1:]
-            input_ids = input_ids[:, :-1]
-            outputs = model(input_ids)
-            lm_logits = outputs["logits"] / args.temperature
+            # tgt_ids = torch.tensor(data[st:ed]).to(device)[:, 1:]
+            # input_ids = input_ids[:, :-1]
+            # lm_logits = model(input_ids)["logits"] / args.temperature
 
-            loss = ce_loss_fct(
-                lm_logits.reshape((-1, lm_logits.shape[-1])), tgt_ids.reshape((-1,))
-            ).reshape(input_ids.shape)
-            loss_mask = (input_ids != PAD_ID).float()
-            loss_mask[:, 0] = 1.0
-            loss *= loss_mask
-            loss = loss.sum(dim=-1) / loss_mask.sum(dim=-1)
+            # loss = ce_loss_fct(
+            #     lm_logits.reshape((-1, lm_logits.shape[-1])), tgt_ids.reshape((-1,))
+            # ).reshape(input_ids.shape)
+            # loss_mask = (input_ids != PAD_ID).float()
+            # loss_mask[:, 0] = 1.0
+            # loss *= loss_mask
+            # loss = loss.sum(dim=-1) / loss_mask.sum(dim=-1)
+
+            tgt_ids = input_ids[:, 1:]
+            input_ids = input_ids[:, :-1]
+            lm_logits = model(input_ids)["logits"]
+
+            loss = ce_loss_fct(lm_logits.view(-1, lm_logits.shape[-1]), tgt_ids.contiguous().view(-1))
+            pad_pos = torch.eq(tgt_ids, PAD_ID).to(torch.float).to(device)
+            pad_pos = torch.cat([torch.zeros([ed-st, 1]).to(device), pad_pos[:, :-1]], 1)
+            loss_mask = 1. - pad_pos
+            loss = torch.sum(loss.view(input_ids.size()[0], -1) * loss_mask, 1) / (torch.sum(loss_mask, 1) + 1e-20)
+
             # TODO END
             all_loss += loss.cpu().numpy().tolist()
     loss = np.mean(all_loss)
@@ -398,10 +408,14 @@ if __name__ == "__main__":
             state_dict = model.state_dict()
             full_model = torch.load(args.pretrain_dir)
             ckpt = full_model.state_dict()
-            mappings = [{"0": "0", "1": "1", "2": "2"}, {"0": "9", "1": "10", "2": "11"}, {"0": "0", "1": "5", "2": "11"}]
+            mappings = [
+                {"0": "0", "1": "1", "2": "2"},
+                {"0": "9", "1": "10", "2": "11"},
+                {"0": "0", "1": "5", "2": "11"},
+            ]
             mapping = mappings[args.extract_layer]
             for key in state_dict.keys():
-                #！ TODO 这里的 key 是什么
+                # ！ TODO 这里的 key 是什么
                 if key.startswith("transformer.h"):
                     name = key.split(".")
                     name[2] = mapping[name[2]]
@@ -450,7 +464,9 @@ if __name__ == "__main__":
                 batched_data = torch.tensor(data["train"][st:ed]).to(device)
 
                 optimizer.zero_grad()
-                loss = model(input_ids=batched_data, labels=batched_data, PAD_ID=PAD_ID)["loss"]
+                loss = model(
+                    input_ids=batched_data, labels=batched_data, PAD_ID=PAD_ID
+                )["loss"]
                 loss.backward()
                 optimizer.step()
                 losses.append(loss.tolist())

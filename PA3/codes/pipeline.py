@@ -3,6 +3,7 @@ import os
 import subprocess
 from pathlib import Path
 
+
 def train_models():
     skracth_experiments = [(3, 128), (12, 64)]
     for layer, batch_size in skracth_experiments:
@@ -21,9 +22,12 @@ def train_models():
         os.system(
             f"python main.py --pretrain_dir={pretrained_ckpt} --batch_size={batch_size} --using_wandb"
         )
+
+
 def train_extraction():
 
     experiments = [1, 2, 3]
+    experiments = [2, 3]
     batch_size = 128
     for experiment in experiments:
         print(
@@ -32,6 +36,7 @@ def train_extraction():
         os.system(
             f"python main.py --pretrain_dir=./ckpt/full.tar --extract_layer={experiment} --batch_size={batch_size} --using_wandb"
         )
+
 
 def basic_test_models(all_models, primary_bs=230, full_bs=156):
     k_s = [30, 40, 50]
@@ -67,14 +72,14 @@ def test_BLEU(all_models, primary_bs=230, full_bs=156):
     choices = ["random", "top-p", "top-k"]
     experiments = [
         # ("random", 1, 0, 0), # 这个已经做过了
-        ("random", 0.85, 0, 0), # okay
+        ("random", 0.85, 0, 0),  # okay
         # ("random", 0.7, 0, 0), # 这个已经做过了
         # ("top-p", 1, 0.9, 0), # 这个已经做过了
         ("top-p", 1, 0.8, 0),
         ("top-p", 1, 0.7, 0),
         # ("top-k", 1, 0, 40), # 这个已经做过了
-        ("top-k", 1, 0, 30), # okay
-        ("top-k", 1, 0, 20), # okay
+        ("top-k", 1, 0, 30),  # okay
+        ("top-k", 1, 0, 20),  # okay
     ]
     for decode_strategy, temperature, p, k in experiments:
         for model in all_models:
@@ -88,6 +93,7 @@ def test_BLEU(all_models, primary_bs=230, full_bs=156):
             print(
                 f"python main.py --test {model} --decode_strategy={decode_strategy} --temperature={temperature} --top_p={p} --top_k={k} --batch_size={batch_size} --using_wandb"
             )
+
 
 def test_ppl(primary_bs=230, full_bs=156):
     temperatures = [0.4, 0.55, 0.7, 0.85, 1.0, 1.15, 1.3, 1.45, 1.6]
