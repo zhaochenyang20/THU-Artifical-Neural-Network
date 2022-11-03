@@ -22,7 +22,8 @@ def train_models():
             f"python main.py --pretrain_dir={pretrained_ckpt} --batch_size={batch_size} --using_wandb"
         )
 def train_extraction():
-    experiments = [1 , 2, 3]
+
+    experiments = [1, 2, 3]
     batch_size = 128
     for experiment in experiments:
         print(
