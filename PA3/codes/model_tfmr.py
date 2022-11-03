@@ -278,7 +278,7 @@ class TfmrLMHeadModel(nn.Module):
             input_ids=input_ids, past_key_values=past_key_values, use_cache=use_cache,
         )
         hidden_states = transformer_outputs["last_hidden_state"]
-        lm_pits = self.lm_head(hidden_states)
+        lm_logits = self.lm_head(hidden_states)
 
         loss = None
         if labels is not None:
