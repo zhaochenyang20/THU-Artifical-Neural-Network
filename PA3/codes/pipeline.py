@@ -136,3 +136,4 @@ if __name__ == "__main__":
     basic_test_models(all_models, primary_bs=230, full_bs=156)
     test_BLEU(all_models, primary_bs=230, full_bs=156)
     # test_ppl(230, 156)
+    #! python main.py --test ./train_ckpt/3_128.tar --decode_strategy random --temperature=1 --top_p=0 --top_k=0 --batch_size=128
