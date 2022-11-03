@@ -121,6 +121,7 @@ def get_all_model_path(get_extract=False):
                     all_models.append(str(model_dir))
     return all_models
 
+
 if __name__ == "__main__":
     # train_models()
     train_extraction()

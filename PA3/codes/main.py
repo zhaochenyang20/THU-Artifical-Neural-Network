@@ -401,7 +401,7 @@ if __name__ == "__main__":
             mappings = [{"0": "0", "1": "1", "2": "2"}, {"0": "9", "1": "10", "2": "11"}, {"0": "0", "1": "5", "2": "11"}]
             mapping = mappings[args.extract_layer]
             for key in state_dict.keys():
-                if key.startwith("transformer.h"):
+                if key.startswith("transformer.h"):
                     name = key.split(".")
                     name[2] = mapping[name[2]]
                     name = ".".join(name)
