@@ -107,4 +107,4 @@ def test_ppl(batch_size=128):
 
 if __name__ == "__main__":
     # test_BLEU(200, 128)
-    test_ppl(128)
+    test_ppl(156)
