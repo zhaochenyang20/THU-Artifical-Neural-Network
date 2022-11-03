@@ -312,8 +312,8 @@ if __name__ == "__main__":
         extract_layer,
     ) = parser_args()
     if extract_layer != 0:
-        extarction_dict = {1: "first", 2: "last" , 3 : "skip"}
-        wandb_run_name = f"extraction_{extarction_dict[extract_layer]}"
+        extraction_dict = {1: "first", 2: "last", 3: "skip"}
+        wandb_run_name = f"extraction_{extraction_dict[extract_layer]}"
     elif args.test is None:
         if args.pretrain_dir is None:
             print("Created model with fresh parameters.")
@@ -449,7 +449,9 @@ if __name__ == "__main__":
                 batched_data = torch.tensor(data["train"][st:ed]).to(device)
 
                 optimizer.zero_grad()
-                loss = model(input_ids=batched_data, labels=batched_data, PAD_ID=PAD_ID)["loss"]
+                loss = model(
+                    input_ids=batched_data, labels=batched_data, PAD_ID=PAD_ID
+                )["loss"]
                 loss.backward()
                 optimizer.step()
                 losses.append(loss.tolist())
