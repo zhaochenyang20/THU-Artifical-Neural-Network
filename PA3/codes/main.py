@@ -400,7 +400,7 @@ if __name__ == "__main__":
                 {"0": "9", "1": "10", "2": "11"},
                 {"0": "0", "1": "5", "2": "11"},
             ]
-            mapping = mappings[args.extract_layer - 1]
+            mapping = mappings[args.extract_layer]
             for key in state_dict.keys():
                 # ！ TODO 这里的 key 是什么
                 if key.startswith("transformer.h"):
