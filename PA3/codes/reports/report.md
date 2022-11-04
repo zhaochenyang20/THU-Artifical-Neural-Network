@@ -213,12 +213,18 @@ A bus that is sitting next to another bus on the side of the road .
 
    最后，模型需要一个自定义标记来表示不在词汇表中的单词。这就是所谓的未知标记，通常表示为 [UNK]。如果分词器产生了很多这样的标记，这通常是一个不好的迹象，因为它无法检索到一个词的合理表示，而模型正在沿途丢失信息。制作词汇的一大目标是使标记器尽可能少地将单词标记到未知标记中，而显然，Word-based Tokenizer 将面对大量的未知标记。
 
-   BPE tokenizer 类似于 Subword-based tokenization。BPE 本身是一种简单的数据压缩算法，其中最常见的是将一对连续字节替换为该数据中不出现的字节。BPE 分词器能够达到将常用的单词在一定程度内保留，而生僻单词分解为有意义子段的目的。不常出现的词被分解成不同的 Token 参与训练，避免了大量的未知标记，也降低了词表的复杂度，有利于训练。此外，BPE tokenizer 还可以一定程度上实现 embedding sharing，前文的 dog，dogs，dogge 都可以 share dog 这个字词的 embedding，在神经网络层共享特征，也降低了训练复杂度。
+   BPE tokenizer属于 Subword-based tokenization。BPE 本身是一种简单的数据压缩算法，其中最常见的是将一对连续字节替换为该数据中不出现的字节。BPE 分词器能够达到将常用的单词在一定程度内保留，而生僻单词分解为有意义子段的目的。不常出现的词被分解成不同的 Token 参与训练，避免了大量的未知标记，也降低了词表的复杂度，有利于训练。此外，BPE tokenizer 还可以一定程度上实现 embedding sharing，前文的 dog，dogs，dogge 都可以 share dog 这个字词的 embedding，在神经网络层共享特征，也降低了训练复杂度。
 
 3. Transformer 与 RNN 的对比？
 
-   从张量建模的角度来看，Transformer 利用三维张量映射来建模一个 language translation 过程是非常优秀的，甚至可以说是现有算力下的极致模型。Transformer 避免了逐单词处理序列的问题，让他本身就具有了双向性。对于 CNN 与 RNN，两个不同的 token 相互作用时，模型的顺序性决定了这两个不同 token 的先后并不影响结果。而对 transformer 而言，两个不同的 token 在彼此视角下的 attention 是不同的。可以如此类比，transformer 当中的两个 token 如同两个人 Alice 和 Bob，Alice 眼中，自己和 Bob 的相互关系大概率和 Bob 眼中自己和 Alice 的相互关系是不同的，这承载了丰富的语义信息，而 CNN 和 RNN 则走向了“我见青山多妩媚，料青山见我当如是”的局限。此外，Transformer 当中的 token attention 相互关系相较 RNN 中沿着 recurrence 链条的相互关系是更加稳定的，应为 RNN 沿着序列遍历时更容易出现梯度消失或者爆炸，而 attention 能够对任意距离的 token 产生更为稳定的结果。
+   从模型表现力的角度来看，Transformer 利用三维张量映射来建模一个 language translation 过程是非常优秀的，甚至可以说是现有算力下的极致模型。Transformer 避免了逐单词处理序列的问题，让他本身就具有了双向性。对于 CNN 与 RNN，两个不同的 token 相互作用时，模型的顺序性决定了这两个不同 token 的先后并不影响结果。而对 transformer 而言，两个不同的 token 在彼此视角下的 attention 是不同的。可以如此类比，transformer 当中的两个 token 如同两个人 Alice 和 Bob，Alice 眼中，自己和 Bob 的相互关系大概率和 Bob 眼中自己和 Alice 的相互关系是不同的，这承载了丰富的语义信息，而 CNN 和 RNN 则走向了“我见青山多妩媚，料青山见我当如是”的局限。此外，Transformer 当中的 token attention 相互关系相较 RNN 中沿着 recurrence 链条的相互关系是更加稳定的，应为 RNN 沿着序列遍历时更容易出现梯度消失或者爆炸，而 attention 能够对任意距离的 token 产生更为稳定的结果。
 
-   从时间复杂度上，考虑 n 为序列长度，d 为 hidden layer 维度，则 transformer 的复杂度为 $O\left(n^2 d+n d^2\right)$，而RNN的时间复杂度是 $O\left(n d^2\right)$，看上去当 n 远超过 d 时，transformer 的复杂度会有显著劣势，然而 transformer 的每一层都能够高效并行，甚至还有 Megatron 这样的工作能够从系统层面优化 transformer layer 的并行计算，而 RNN 囿于模型必然的顺序性，只能够串行计算。总之，现有的加速框架能够弥合 transformer 复杂度上的不足，而相比时间复杂度的缺憾，transformer 的模型强度足够吸引人。
+   从模型参数数量的角度来看，Transformer Block 可以轻松堆叠起来形成参数量庞大的健壮模型，并可以对每一层施加 auxiliary loss；而 RNN 可能会受到梯度消失等问题的影响从而有
 
-   
+   一定的限制，不能够将层数堆叠太大。
+
+   从时间复杂度的角度来看，考虑 n 为序列长度，d 为 hidden layer 维度，则 transformer 的复杂度为 $O\left(n^2 d+n d^2\right)$，而RNN的时间复杂度是 $O\left(n d^2\right)$，看上去当 n 远超过 d 时，transformer 的复杂度会有显著劣势，然而 transformer 的每一层都能够高效并行，甚至还有 Megatron 这样的工作能够从系统层面优化 transformer layer 的并行计算，而 RNN 囿于模型必然的顺序性，只能够串行计算。总之，现有的加速框架能够弥合 transformer 复杂度上的不足，而相比时间复杂度的缺憾，transformer 的模型强度足够吸引人。
+
+4. 预训练模型的影响？
+
+   从实验结果上看，预训练模型对于提高模型的最终效果是很好的。我认为这和迁移学习的机制有直接联系，这使得模型的最终效果和收敛速度都有了一定提升。毕竟模型在先前的训练中已经掌握了一定的语言能力，有了一定基础学习效率自然要高些。当然，预训练的坏处也是明确的，毕竟高昂的预训练成本不容忽略，而且模型究竟是有学习到语言能力，从根本上提高了模型的泛化能力，还是仅仅因为测试集实际上是预训练集的子集导致了模型仅仅依靠拟合就产生了可观的效果，这是值得考究的。

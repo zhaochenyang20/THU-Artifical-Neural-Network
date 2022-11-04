@@ -25,7 +25,8 @@ def train_models():
 
 def train_extraction():
 
-    experiments = [1, 2, 3]
+    # experiments = [1, 2, 3]
+    experiments = [1]
     batch_size = 128
     for experiment in experiments:
         print(
@@ -116,7 +117,8 @@ def get_all_model_path(get_extract=False):
     for _, __, models in os.walk(model_path):
         if get_extract:
             for model in models:
-                if model.endswith(".tar") and "extraction" in model:
+                # if model.endswith(".tar") and "extraction" in model:
+                if model.endswith(".tar") and "extraction_first" in model:
                     model_dir = model_path / model
                     all_models.append(str(model_dir))
         else:
@@ -128,9 +130,9 @@ def get_all_model_path(get_extract=False):
 
 
 def train_headers():
-    headers = [(1, 128), (768, 64), (2, 128), (384, 96), (3, 128), (256, 106), (4, 128), (192, 110), (6, 128), (128, 118), (8, 128), (96, 120), (12, 128), (64, 122), (16, 128), (48, 124), (24, 128), (32, 126)]
+    experiments = [(1, 128), (768, 64), (2, 128), (384, 96), (3, 128), (256, 106), (4, 128), (192, 110), (6, 128), (128, 118), (8, 128), (96, 120), (12, 128), (64, 122), (16, 128), (48, 124), (24, 128), (32, 126)]
     layer = 3
-    for header, batch_size in headers:
+    for header, batch_size in experiments:
         os.system(
             f"python main.py --num_layers={layer} --batch_size={batch_size} --num_heads={header} --using_wandb",
         )
@@ -141,9 +143,9 @@ def train_headers():
 
 if __name__ == "__main__":
     # train_models()
-    # train_extraction()
-    # all_models = get_all_model_path(get_extract=True)
-    # basic_test_models(all_models, primary_bs=330, full_bs=277)
-    # test_BLEU(all_models, primary_bs=330, full_bs=277)
+    train_extraction()
+    all_models = get_all_model_path(get_extract=True)
+    basic_test_models(all_models, primary_bs=330, full_bs=277)
+    test_BLEU(all_models, primary_bs=330, full_bs=277)
     # test_ppl(330, 277)
-    train_headers()
+    # train_headers()
