@@ -25,8 +25,7 @@ def train_models():
 
 def train_extraction():
 
-    # experiments = [1, 2, 3]
-    experiments = [1]
+    experiments = [1, 2, 3]
     batch_size = 128
     for experiment in experiments:
         print(
@@ -117,8 +116,7 @@ def get_all_model_path(get_extract=False):
     for _, __, models in os.walk(model_path):
         if get_extract:
             for model in models:
-                # if model.endswith(".tar") and "extraction" in model:
-                if model.endswith(".tar") and "extraction_first" in model:
+                if model.endswith(".tar") and "extraction" in model:
                     model_dir = model_path / model
                     all_models.append(str(model_dir))
         else:
@@ -142,10 +140,10 @@ def train_headers():
 
 
 if __name__ == "__main__":
-    # train_models()
+    train_models()
     train_extraction()
-    all_models = get_all_model_path(get_extract=True)
+    all_models = get_all_model_path(get_extract=False)
     basic_test_models(all_models, primary_bs=330, full_bs=277)
     test_BLEU(all_models, primary_bs=330, full_bs=277)
-    # test_ppl(330, 277)
-    # train_headers()
+    test_ppl(330, 277)
+    train_headers()
