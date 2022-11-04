@@ -519,6 +519,7 @@ if __name__ == "__main__":
                 print("  best epoch:                    " + str(best_epoch))
                 print("  best validation perplexity:    " + str(best_val_ppl))
                 if using_wandb:
+                    print("logging to wandb")
                     wandb.log(
                         {
                             "epoch": epoch,
