@@ -7,9 +7,8 @@ from pathlib import Path
 def train_models():
     skracth_experiments = [(3, 128), (12, 64)]
     for layer, batch_size in skracth_experiments:
-        subprocess.run(
+        os.system(
             f"python main.py --num_layers={layer} --batch_size={batch_size} --using_wandb",
-            shell=True,
         )
         print(
             f"python main.py --num_layers={layer} --batch_size={batch_size} --using_wandb",
@@ -27,7 +26,6 @@ def train_models():
 def train_extraction():
 
     experiments = [1, 2, 3]
-    experiments = [2, 3]
     batch_size = 128
     for experiment in experiments:
         print(
@@ -129,10 +127,24 @@ def get_all_model_path(get_extract=False):
     return all_models
 
 
+def train_headers():
+    headers = [1, 768, 2, 384, 3, 256, 4, 192, 6, 128, 8, 96, 11, 69, 12, 64, 16, 48, 24, 32]
+    layer = 3
+    batch_size = 230
+    for header in headers:
+        os.system(
+            f"python main.py --num_layers={layer} --batch_size={batch_size} --num_heads={header} --using_wandb",
+        )
+        print(
+            f"python main.py --num_layers={layer} --batch_size={batch_size} --num_heads={header} --using_wandb",
+        )
+
+
 if __name__ == "__main__":
     # train_models()
-    train_extraction()
-    all_models = get_all_model_path(get_extract=True)
-    basic_test_models(all_models, primary_bs=330, full_bs=277)
-    test_BLEU(all_models, primary_bs=330, full_bs=277)
+    # train_extraction()
+    # all_models = get_all_model_path(get_extract=True)
+    # basic_test_models(all_models, primary_bs=330, full_bs=277)
+    # test_BLEU(all_models, primary_bs=330, full_bs=277)
     # test_ppl(330, 277)
+    train_headers()

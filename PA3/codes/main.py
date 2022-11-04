@@ -140,6 +140,12 @@ def parser_args():
         default=0,
         help="The number of extract layers for the transformer. Default: 0",
     )
+    parser.add_argument(
+        "--num_heads",
+        type=int,
+        default=12,
+        help="The number of heads for the transformer. Default: 12",
+    )
     args = parser.parse_args()
     return (
         args,
@@ -163,6 +169,7 @@ def parser_args():
         args.waiting_epoch,
         args.num_layers,
         args.extract_layer,
+        args.num_heads,
     )
 
 
@@ -306,6 +313,7 @@ if __name__ == "__main__":
         waiting_epoch,
         num_layers,
         extract_layer,
+        num_heads,
     ) = parser_args()
     if extract_layer != 0:
         extraction_dict = {1: "first", 2: "last", 3: "skip"}
@@ -317,8 +325,12 @@ if __name__ == "__main__":
                 model_config = json.load(fin)
                 print("layer num is " + str(args.num_layers))
                 model_config["n_layer"] = args.num_layers
+                model_config["n_head"] = args.num_heads
                 config = ModelConfig(**model_config)
-            wandb_run_name = f"{model_config['n_layer']}_{args.batch_size}"
+                if args.num_heads != 12:
+                     wandb_run_name = f"{model_config['n_layer']}_{args.batch_size}_{args.num_heads}"
+                else:
+                    wandb_run_name = f"{model_config['n_layer']}_{args.batch_size}"
         else:
             #! 用 full 的话，batch_size = 64 会炸
             try:

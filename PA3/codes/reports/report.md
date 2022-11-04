@@ -201,7 +201,20 @@ A bus that is sitting next to another bus on the side of the road .
 
 
 
-```
+1. 为什么 multi-head attention 比 single-head attention 的效果好？
 
-```
+   multi-head attention 结构设计能让每个注意力机制通过 Q、K、V 映射到不同的空间去学习特征，去优化每个词汇的不同特征部分，从而均衡同一种注意力机制可能产生的偏差。每个 attention head 最终只关注最终输出序列中一个子空间，彼此间独立，让词义拥有更多元的表达来源。实验表明 multi-head 能够显著提升模型效果。
 
+2. **BPE** 分词器与空格分词器的区别？
+
+   **空格分词器**也即 Word-based Tokenizer，在该分词器作用下，每个词都被分配了一个 ID，从 0 开始，一直到词汇表的大小。该模型使用这些 ID 来识别每个词。
+
+   如果研究者希望利用 Word-based Tokenizer 完全覆盖一种语言，就需要为该语言中的每个词都有一个标识符，这将产生大量的标记。例如，英语中有超过 50 万个单词，所以要建立一个从每个单词到输入 ID 的映射，需要跟踪非常多 ID。此外，像 dog 这样的词与 dogs 这样的词的表示方法不同，模型最初将没有办法知道 dog 和 dogs 是相似的：它将识别这两个词是不相关的。同样的情况也适用于其他类似的词，比如 run 和 running，模型最初也不会认为它们是相似的。
+
+   最后，模型需要一个自定义标记来表示不在词汇表中的单词。这就是所谓的未知标记，通常表示为 [UNK]。如果分词器产生了很多这样的标记，这通常是一个不好的迹象，因为它无法检索到一个词的合理表示，而模型正在沿途丢失信息。制作词汇的一大目标是使标记器尽可能少地将单词标记到未知标记中，而显然，Word-based Tokenizer 将面对大量的未知标记。
+
+   BPE tokenizer 类似于 Subword-based tokenization。BPE 本身是一种简单的数据压缩算法，其中最常见的是将一对连续字节替换为该数据中不出现的字节。BPE 分词器能够达到将常用的单词在一定程度内保留，而生僻单词分解为有意义子段的目的。不常出现的词被分解成不同的 Token 参与训练，避免了大量的未知标记，也降低了词表的复杂度，有利于训练。此外，BPE tokenizer 还可以一定程度上实现 embedding sharing，前文的 dog，dogs，dogge 都可以 share dog 这个字词的 embedding，在神经网络层共享特征，也降低了训练复杂度。
+
+3. Transformer 与 RNN 的对比？
+
+4. 
