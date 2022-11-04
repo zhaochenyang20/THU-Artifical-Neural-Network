@@ -128,12 +128,11 @@ def get_all_model_path(get_extract=False):
 
 
 def train_headers():
-    headers = [# (1, 128), \
-               (768, 64), (2, 128), (384, 96), (3, 128), (256, 106), (4, 128), (192, 110), (6, 128), (128, 118), (8, 128), (96, 120), (12, 128), (64, 122), (16, 128), (48, 124), (24, 128), (32, 126)]
+    headers = [(1, 128), (768, 64), (2, 128), (384, 96), (3, 128), (256, 106), (4, 128), (192, 110), (6, 128), (128, 118), (8, 128), (96, 120), (12, 128), (64, 122), (16, 128), (48, 124), (24, 128), (32, 126)]
     layer = 3
     for header, batch_size in headers:
         os.system(
-            f"python main.py --num_layers={layer} --batch_size={batch_size} --num_heads={header}",
+            f"python main.py --num_layers={layer} --batch_size={batch_size} --num_heads={header} --using_wandb",
         )
         print(
             f"python main.py --num_layers={layer} --batch_size={batch_size} --num_heads={header} --using_wandb",
