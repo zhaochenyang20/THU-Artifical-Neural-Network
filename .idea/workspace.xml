@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="3a465240-d8c3-43c7-a139-2c472ef69e9a" name="变更" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/THU-Artifical-Neural-Network.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/other.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PA3/code_analysis/_codes/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/PA3/code_analysis/_codes/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PA3/code_analysis/summary.txt" beforeDir="false" afterPath="$PROJECT_DIR$/PA3/code_analysis/summary.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PA3/codes/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PA3/codes/.idea/codes.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PA3/codes/.idea/inspectionProfiles/profiles_settings.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PA3/codes/.idea/misc.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PA3/codes/.idea/modules.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PA3/codes/.idea/vcs.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PA3/codes/.vscode/settings.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PA3/codes/reports/report.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PA3/codes/test_results/extraction_skip_top-p_1.0_0.8_0.txt" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectId" id="2HAGgEpd4VgEMUdkXiD3g92BlrV" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "settings.editor.selected.configurable": "preferences.lookFeel"
+  }
+}]]></component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="应用程序级" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="默认任务">
+      <changelist id="3a465240-d8c3-43c7-a139-2c472ef69e9a" name="变更" comment="" />
+      <created>1667720587137</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1667720587137</updated>
+      <workItem from="1667720592099" duration="246000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

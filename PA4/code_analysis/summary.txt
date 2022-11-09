@@ -1,0 +1,20 @@
+########################
+# Filled Code
+########################
+# ../codes/GAN/trainer.py:1
+
+# ../codes/GAN/trainer.py:2
+
+# ../codes/GAN/trainer.py:3
+
+# ../codes/GAN/GAN.py:1
+
+
+########################
+# References
+########################
+
+########################
+# Other Modifications
+########################
+
