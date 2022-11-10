@@ -5,6 +5,8 @@ from pytorch_fid import fid_score
 import torch
 import torch.optim as optim
 import os
+from torchvision.utils import make_grid
+from torchvision.utils import save_image
 
 def parser_data():
     import argparse
@@ -22,7 +24,6 @@ def parser_data():
     parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. default=0.5')
     parser.add_argument('--data_dir', default='../data', type=str, help='The path of the data directory')
     parser.add_argument('--ckpt_dir', default='results', type=str, help='The path of the checkpoint directory')
-    parser.add_argument('--log_dir', default='./runs', type=str)
     parser.add_argument("--backbone", default="CNN", choices=["CNN", "MLP"])
     parser.add_argument("--using_wandb", default=False, action='store_true')
     parser.add_argument("--seed", default=42, type=int)
@@ -80,7 +81,19 @@ if __name__ == "__main__":
         trainer = Trainer(device, netG, netD, optimG, optimD, dataset, args.ckpt_dir)
         trainer.train(args.num_training_steps, args.logging_steps, args.saving_steps, using_wandb)
 
-    restore_ckpt_path = os.path.join(args.ckpt_dir, str(max(int(step) for step in os.listdir(args.ckpt_dir))))
+        netG.eval()
+        for pair in range(5) :
+            z1 = torch.randn(size = (args.latent_dim, 1, 1), device = device)
+            z2 = torch.randn(size = (args.latent_dim, 1, 1), device = device)
+            all_z = [z1 + i / 10 * (z2 - z1) for i in range(10)]
+            all_z = torch.stack(all_z)
+            save_image(make_grid(netG(all_z), nrow = 5, normalize = True, value_range = (-1, 1)), os.path.join(args.ckpt_dir, "interpolate_{}.png".format(pair)))
+
+        save_image(make_grid(netG(torch.randn(size = (50, args.latent_dim, 1, 1), device = device)),
+                                nrow = 10, normalize = True, value_range = (-1, 1)),
+                    os.path.join(args.ckpt_dir, "50_cases.png"))
+    steps = [each for each in os.listdir(args.ckpt_dir) if not each.endswith(".png")]
+    restore_ckpt_path = os.path.join(args.ckpt_dir, str(max(int(step) for step in steps)))
     netG.restore(restore_ckpt_path)
 
     num_samples = 3000
