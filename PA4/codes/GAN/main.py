@@ -1,16 +1,13 @@
 import GAN
 from trainer import Trainer
 from dataset import Dataset
-from tensorboardX import SummaryWriter
-
 from pytorch_fid import fid_score
-
 import torch
 import torch.optim as optim
 import os
-import argparse
 
-if __name__ == "__main__":
+def parser_data():
+    import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--do_train', action='store_true')
     parser.add_argument('--no_cuda', action='store_true')
@@ -26,23 +23,62 @@ if __name__ == "__main__":
     parser.add_argument('--data_dir', default='../data', type=str, help='The path of the data directory')
     parser.add_argument('--ckpt_dir', default='results', type=str, help='The path of the checkpoint directory')
     parser.add_argument('--log_dir', default='./runs', type=str)
+    parser.add_argument("--backbone", default="CNN", choices=["CNN", "MLP"])
+    parser.add_argument("--using_wandb", default=False, action='store_true')
+    parser.add_argument("--seed", default=42, type=int)
     args = parser.parse_args()
+    return args
 
-    config = 'z-{}_batch-{}_num-train-steps-{}'.format(args.latent_dim, args.batch_size, args.num_training_steps)
-    args.ckpt_dir = os.path.join(args.ckpt_dir, config)
-    args.log_dir = os.path.join(args.log_dir, config)
+def manual_seed(seed):
+    os.environ["PL_GLOBAL_SEED"] = str(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+def get_wandb_running_name(args):
+    latent_dim = args.latent_dim
+    generator_hidden_dim = args.generator_hidden_dim
+    discriminator_hidden_dim = args.discriminator_hidden_dim
+    #* usually discriminator_hidden_dim equals discriminator_hidden_dim
+    backbone = args.backbone
+    seed = args.seed
+    if seed != 42:
+        print(f"GAN_{backbone}_latent_dim_{latent_dim}_generator_hidden_dim_{generator_hidden_dim}_discriminator_hidden_dim_{discriminator_hidden_dim}_seed_{seed}")
+        wandb_run_name = f"{backbone}_{latent_dim}_{generator_hidden_dim}_{discriminator_hidden_dim}_{seed}"
+    else:
+        print(f"GAN_{backbone}_latent_dim_{latent_dim}_generator_hidden_dim_{generator_hidden_dim}_discriminator_hidden_dim_{discriminator_hidden_dim}")
+        wandb_run_name = f"{backbone}_{latent_dim}_{generator_hidden_dim}_{discriminator_hidden_dim}"
+    return wandb_run_name
+
+if __name__ == "__main__":
+    args = parser_data()
+    wandb_run_name = get_wandb_running_name(args)
+    using_wandb = args.using_wandb
+    if using_wandb:
+        import wandb
+        wandb.init(project="GAN", entity="eren-zhao", name=wandb_run_name)
+        wandb.config = {
+            "latent_dim": args.latent_dim,
+            "generator_hidden_dim": args.generator_hidden_dim,
+            "discriminator_hidden_dim": args.discriminator_hidden_dim,
+            "batch_size": args.batch_size,
+            "num_training_steps": args.num_training_steps,
+            "learning_rate": args.learning_rate,
+            "beta1": args.beta1,
+            "backbone": args.backbone,
+            "seed": args.seed,
+        }
+    args.ckpt_dir = os.path.join(args.ckpt_dir, wandb_run_name)
     device = torch.device('cuda' if torch.cuda.is_available() and not args.no_cuda else 'cpu')
 
     dataset = Dataset(args.batch_size, args.data_dir)
     netG = GAN.get_generator(1, args.latent_dim, args.generator_hidden_dim, device)
     netD = GAN.get_discriminator(1, args.discriminator_hidden_dim, device)
-    tb_writer = SummaryWriter(args.log_dir)
-
     if args.do_train:
         optimG = optim.Adam(netG.parameters(), lr=args.learning_rate, betas=(args.beta1, 0.999))
         optimD = optim.Adam(netD.parameters(), lr=args.learning_rate, betas=(args.beta1, 0.999))
-        trainer = Trainer(device, netG, netD, optimG, optimD, dataset, args.ckpt_dir, tb_writer)
-        trainer.train(args.num_training_steps, args.logging_steps, args.saving_steps)
+        trainer = Trainer(device, netG, netD, optimG, optimD, dataset, args.ckpt_dir)
+        trainer.train(args.num_training_steps, args.logging_steps, args.saving_steps, using_wandb)
 
     restore_ckpt_path = os.path.join(args.ckpt_dir, str(max(int(step) for step in os.listdir(args.ckpt_dir))))
     netG.restore(restore_ckpt_path)
@@ -70,5 +106,6 @@ if __name__ == "__main__":
     samples = samples.cpu()
 
     fid = fid_score.calculate_fid_given_images(real_imgs, samples, args.batch_size, device)
-    tb_writer.add_scalar('fid', fid)
+    if using_wandb:
+        wandb.log({"fid": fid})
     print("FID score: {:.3f}".format(fid), flush=True)

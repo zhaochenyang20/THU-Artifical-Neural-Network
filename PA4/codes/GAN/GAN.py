@@ -29,7 +29,17 @@ class Generator(nn.Module):
 
 		# TODO START
         self.decoder = nn.Sequential(
-            
+            nn.ConvTranspose2d(in_channels = latent_dim, out_channels = 4 * hidden_dim, kernel_size = 4),
+            nn.BatchNorm2d(4 * hidden_dim),
+            nn.ReLU(),
+            nn.ConvTranspose2d(in_channels = 4 * hidden_dim, out_channels = 2 * hidden_dim, kernel_size = 4, stride = 2, padding = 1),
+            nn.BatchNorm2d(2 * hidden_dim),
+            nn.ReLU(),
+            nn.ConvTranspose2d(in_channels = 2 * hidden_dim, out_channels = hidden_dim, kernel_size = 4, stride = 2, padding = 1),
+            nn.BatchNorm2d(hidden_dim),
+            nn.ReLU(),
+            nn.ConvTranspose2d(in_channels = hidden_dim, out_channels = num_channels, kernel_size = 4, stride = 2, padding = 1),
+            nn.Tanh()
         )
 		# TODO END
 
@@ -57,6 +67,32 @@ class Generator(nn.Module):
         path = os.path.join(ckpt_dir, str(global_step), 'generator.bin')
         torch.save(self.state_dict(), path)
         return os.path.split(path)[0]
+
+#! Warning
+class Generator_MLP(Generator) :
+    def __init__(self, num_channels, latent_dim, hidden_dim) :
+        super().__init__(num_channels, latent_dim, hidden_dim)
+        self.decoder = nn.Sequential(
+            nn.Linear(latent_dim, 4 * hidden_dim),
+            nn.BatchNorm1d(4 * hidden_dim),
+            nn.ReLU(),
+            nn.Linear(4 * hidden_dim, 2 * hidden_dim),
+            nn.BatchNorm1d(2 * hidden_dim),
+            nn.ReLU(),
+            nn.Linear(2 * hidden_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, num_channels * 32 * 32),
+            nn.Tanh()
+        )
+    def forward(self, z : torch.Tensor):
+        '''
+        *   Arguments:
+            *   z (torch.FloatTensor): [batch_size, latent_dim, 1, 1]
+        '''
+        z = z.to(next(self.parameters()).device)
+        return self.decoder(z.reshape((z.shape[0], -1))).reshape((z.shape[0], self.num_channels, 32, 32))
+
 
 class Discriminator(nn.Module):
     def __init__(self, num_channels, hidden_dim):
@@ -99,3 +135,23 @@ class Discriminator(nn.Module):
         path = os.path.join(ckpt_dir, str(global_step), 'discriminator.bin')
         torch.save(self.state_dict(), path)
         return os.path.split(path)[0]
+
+#! Warning
+class Discriminator_MLP(Discriminator) :
+    def __init__(self, num_channels, hidden_dim) :
+        super().__init__(num_channels, hidden_dim)
+
+        self.clf = nn.Sequential(
+            nn.Linear(num_channels * 32 * 32, hidden_dim),
+            nn.LeakyReLU(0.2, inplace = True),
+            nn.Linear(hidden_dim, 2 * hidden_dim),
+            nn.Dropout(0.2),
+            nn.LeakyReLU(0.2, inplace = True),
+            nn.Linear(2 * hidden_dim, 4 * hidden_dim),
+            nn.Dropout(0.2),
+            nn.LeakyReLU(0.2, inplace = True),
+            nn.Linear(4 * hidden_dim, 1),
+            nn.Sigmoid()
+        )
+    def forward(self, x : torch.Tensor):
+        return self.clf(x.reshape((x.shape[0], -1))).reshape((-1, ))
