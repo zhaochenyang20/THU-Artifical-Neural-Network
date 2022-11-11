@@ -100,7 +100,6 @@ backbones = "CNN"
 <img width="600" src="./pics/CNN_100_100_100 (4).png"/>
 <img width="600" src="./CNN_100_100_100/4999/samples.png"/>
 </div>
-
 ## `FID`
 
 | Model Config    | FID Score          |

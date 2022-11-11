@@ -53,7 +53,9 @@ class Trainer(object):
         D_G_z1 = self._netD(fake_imgs)
         loss_D_fake = BCE_criterion(D_G_z1, torch.zeros(D_G_z1.shape, device = D_G_z1.device))
         D_G_z1 = D_G_z1.mean()
-        loss_D_fake.backward(retain_graph = True)
+        #! 总的来说进行一次 backward 之后，各个节点的值会清除，这样进行第二次 backward 会报错，如果加上 retain_graph == True 后,可以再来一次 backward
+        loss_D_fake.backward(retain_graph=True)
+        # loss_D_fake.backward()
         # TODO END
 
         # update netD

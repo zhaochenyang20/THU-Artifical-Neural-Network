@@ -43,6 +43,7 @@ def get_wandb_running_name(args):
     #* usually discriminator_hidden_dim equals discriminator_hidden_dim
     backbone = args.backbone
     seed = args.seed
+    manual_seed(seed)
     if seed != 42:
         print(f"GAN_{backbone}_latent_dim_{latent_dim}_generator_hidden_dim_{generator_hidden_dim}_discriminator_hidden_dim_{discriminator_hidden_dim}_seed_{seed}")
         wandb_run_name = f"{backbone}_{latent_dim}_{generator_hidden_dim}_{discriminator_hidden_dim}_{seed}"
@@ -73,8 +74,7 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() and not args.no_cuda else 'cpu')
 
     dataset = Dataset(args.batch_size, args.data_dir)
-    netG = GAN.get_generator(1, args.latent_dim, args.generator_hidden_dim, device)
-    netD = GAN.get_discriminator(1, args.discriminator_hidden_dim, device)
+    netG, netD = GAN.get_model(1, args.latent_dim, args.generator_hidden_dim, args.backbone, device)
     if args.do_train:
         optimG = optim.Adam(netG.parameters(), lr=args.learning_rate, betas=(args.beta1, 0.999))
         optimD = optim.Adam(netD.parameters(), lr=args.learning_rate, betas=(args.beta1, 0.999))
@@ -82,7 +82,7 @@ if __name__ == "__main__":
         trainer.train(args.num_training_steps, args.logging_steps, args.saving_steps, using_wandb)
 
         netG.eval()
-        for pair in range(5) :
+        for pair in range(5):
             z1 = torch.randn(size = (args.latent_dim, 1, 1), device = device)
             z2 = torch.randn(size = (args.latent_dim, 1, 1), device = device)
             all_z = [z1 + i / 10 * (z2 - z1) for i in range(10)]
@@ -91,7 +91,7 @@ if __name__ == "__main__":
 
         save_image(make_grid(netG(torch.randn(size = (50, args.latent_dim, 1, 1), device = device)),
                                 nrow = 10, normalize = True, value_range = (-1, 1)),
-                    os.path.join(args.ckpt_dir, "50_cases.png"))
+                    os.path.join(args.ckpt_dir, "Linear_Interpolation.png"))
     steps = [each for each in os.listdir(args.ckpt_dir) if not each.endswith(".png")]
     restore_ckpt_path = os.path.join(args.ckpt_dir, str(max(int(step) for step in steps)))
     netG.restore(restore_ckpt_path)

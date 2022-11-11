@@ -10,15 +10,19 @@ def weights_init(m):
         torch.nn.init.normal_(m.weight, 1.0, 0.02)
         torch.nn.init.zeros_(m.bias)
 
-def get_generator(num_channels, latent_dim, hidden_dim, device):
-    model = Generator(num_channels, latent_dim, hidden_dim).to(device)
-    model.apply(weights_init)
-    return model
 
-def get_discriminator(num_channels, hidden_dim, device):
-    model = Discriminator(num_channels, hidden_dim).to(device)
-    model.apply(weights_init)
-    return model
+def get_model(num_channels, latent_dim, hidden_dim, backbone, device):
+    if backbone == 'CNN':
+        generator = Generator(num_channels, latent_dim, hidden_dim).to(device)
+        generator.apply(weights_init)
+        discriminator = Discriminator(num_channels, hidden_dim).to(device)
+        discriminator.apply(weights_init)
+    else:
+        generator = Generator_MLP(num_channels, latent_dim, hidden_dim).to(device)
+        generator.apply(weights_init)
+        discriminator = Discriminator_MLP(num_channels, hidden_dim).to(device)
+        discriminator.apply(weights_init)
+    return generator, discriminator
 
 class Generator(nn.Module):
     def __init__(self, num_channels, latent_dim, hidden_dim):
@@ -68,32 +72,6 @@ class Generator(nn.Module):
         torch.save(self.state_dict(), path)
         return os.path.split(path)[0]
 
-#! Warning
-class Generator_MLP(Generator) :
-    def __init__(self, num_channels, latent_dim, hidden_dim) :
-        super().__init__(num_channels, latent_dim, hidden_dim)
-        self.decoder = nn.Sequential(
-            nn.Linear(latent_dim, 4 * hidden_dim),
-            nn.BatchNorm1d(4 * hidden_dim),
-            nn.ReLU(),
-            nn.Linear(4 * hidden_dim, 2 * hidden_dim),
-            nn.BatchNorm1d(2 * hidden_dim),
-            nn.ReLU(),
-            nn.Linear(2 * hidden_dim, hidden_dim),
-            nn.BatchNorm1d(hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, num_channels * 32 * 32),
-            nn.Tanh()
-        )
-    def forward(self, z : torch.Tensor):
-        '''
-        *   Arguments:
-            *   z (torch.FloatTensor): [batch_size, latent_dim, 1, 1]
-        '''
-        z = z.to(next(self.parameters()).device)
-        return self.decoder(z.reshape((z.shape[0], -1))).reshape((z.shape[0], self.num_channels, 32, 32))
-
-
 class Discriminator(nn.Module):
     def __init__(self, num_channels, hidden_dim):
         super(Discriminator, self).__init__()
@@ -135,6 +113,32 @@ class Discriminator(nn.Module):
         path = os.path.join(ckpt_dir, str(global_step), 'discriminator.bin')
         torch.save(self.state_dict(), path)
         return os.path.split(path)[0]
+
+
+#! Warning
+class Generator_MLP(Generator) :
+    def __init__(self, num_channels, latent_dim, hidden_dim) :
+        super().__init__(num_channels, latent_dim, hidden_dim)
+        self.decoder = nn.Sequential(
+            nn.Linear(latent_dim, 4 * hidden_dim),
+            nn.BatchNorm1d(4 * hidden_dim),
+            nn.ReLU(),
+            nn.Linear(4 * hidden_dim, 2 * hidden_dim),
+            nn.BatchNorm1d(2 * hidden_dim),
+            nn.ReLU(),
+            nn.Linear(2 * hidden_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, num_channels * 32 * 32),
+            nn.Tanh()
+        )
+    def forward(self, z : torch.Tensor):
+        '''
+        *   Arguments:
+            *   z (torch.FloatTensor): [batch_size, latent_dim, 1, 1]
+        '''
+        z = z.to(next(self.parameters()).device)
+        return self.decoder(z.reshape((z.shape[0], -1))).reshape((z.shape[0], self.num_channels, 32, 32))
 
 #! Warning
 class Discriminator_MLP(Discriminator) :
