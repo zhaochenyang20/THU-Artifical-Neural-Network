@@ -1,4 +1,4 @@
-# ANN Finale —— GAN
+# ANN Finale —— DCGAN
 
 [toc]
 
@@ -57,7 +57,7 @@ backbones = "CNN"
 
 以下小节标题为 {backbone} {latent dim} {hidden_dim}
 
-### CNN 16 16
+**CNN 16 16**
 
 <div align=center>
 <img width="600" src="./pics/CNN_16_16_16.png"/>
@@ -67,8 +67,7 @@ backbones = "CNN"
 <img width="600" src="./pics/CNN_16_16_16 (4).png"/>
 <img width="600" src="./CNN_16_16_16/4999/samples.png"/>
 </div>
-
-### CNN 16 100
+**CNN 16 100**
 
 <div align=center>
 <img width="600" src="./pics/CNN_16_100_100.png"/>
@@ -78,8 +77,7 @@ backbones = "CNN"
 <img width="600" src="./pics/CNN_16_100_100 (4).png"/>
 <img width="600" src="./CNN_16_100_100/4999/samples.png"/>
 </div>
-
-### CNN 100 16
+**CNN 100 16**
 
 <div align=center>
 <img width="600" src="./pics/CNN_100_16_16.png"/>
@@ -89,8 +87,7 @@ backbones = "CNN"
 <img width="600" src="./pics/CNN_100_16_16 (4).png"/>
 <img width="600" src="./CNN_100_16_16/4999/samples.png"/>
 </div>
-
-### CNN 100 100
+**CNN 100 100**
 
 <div align=center>
 <img width="600" src="./pics/CNN_100_100_100.png"/>
@@ -112,6 +109,8 @@ backbones = "CNN"
 可以见得，四组模型中，CNN_16_100_100 模型的 FID 最佳，取得了 31.06 的优秀表现。
 
 此外，注意到当 FID 超过 100 时实际上意味着训练效果较为糟糕，我反复测试了 CNN_16_16_16 模型的 FID，其值在 70 与 110 之间反复波动。
+
+# 深入讨论
 
 ## 超参讨论
 

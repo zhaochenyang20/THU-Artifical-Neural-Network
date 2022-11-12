@@ -58,6 +58,7 @@ class Trainer(object):
         )
         D_G_z1 = D_G_z1.mean()
         #! 总的来说进行一次 backward 之后，各个节点的值会清除，这样进行第二次 backward 会报错，如果加上 retain_graph == True 后,可以再来一次 backward
+        #! accumulate means that we do not zero the gradients between two backward passes.
         loss_D_fake.backward(retain_graph=True)
         # TODO END
 
@@ -75,6 +76,7 @@ class Trainer(object):
         # TODO START
         D_G_z2 = self._netD(fake_imgs)
         loss_G = BCE_criterion(D_G_z2, torch.ones(D_G_z2.shape, device=D_G_z2.device))
+        #! However, the objective suffers from the gradient vanishing problem.
         D_G_z2 = D_G_z2.mean()
         loss_G.backward()
         # TODO END

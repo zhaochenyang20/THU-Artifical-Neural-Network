@@ -1,13 +1,74 @@
 ########################
+# Additional Files
+########################
+# pipeline.py
+# requirement.md
+# reports
+# .DS_Store
+
+########################
 # Filled Code
 ########################
 # ../codes/GAN/trainer.py:1
+        D_x = self._netD(real_imgs)
+        loss_D_real = BCE_criterion(D_x, torch.ones(D_x.shape, device=D_x.device))
+        D_x = D_x.mean()
+        loss_D_real.backward()
 
 # ../codes/GAN/trainer.py:2
+        D_G_z1 = self._netD(fake_imgs)
+        loss_D_fake = BCE_criterion(
+            D_G_z1, torch.zeros(D_G_z1.shape, device=D_G_z1.device)
+        )
+        D_G_z1 = D_G_z1.mean()
+        #! 总的来说进行一次 backward 之后，各个节点的值会清除，这样进行第二次 backward 会报错，如果加上 retain_graph == True 后,可以再来一次 backward
+        #! accumulate means that we do not zero the gradients between two backward passes.
+        loss_D_fake.backward(retain_graph=True)
 
 # ../codes/GAN/trainer.py:3
+        D_G_z2 = self._netD(fake_imgs)
+        loss_G = BCE_criterion(D_G_z2, torch.ones(D_G_z2.shape, device=D_G_z2.device))
+        #! However, the objective suffers from the gradient vanishing problem.
+        D_G_z2 = D_G_z2.mean()
 
 # ../codes/GAN/GAN.py:1
+            nn.ConvTranspose2d(
+                in_channels=latent_dim,
+                out_channels=4 * hidden_dim,
+                kernel_size=4,
+                stride=1,
+                padding=0,
+            ),
+            nn.BatchNorm2d(4 * hidden_dim),
+            nn.ReLU(),
+            nn.ConvTranspose2d(
+                in_channels=4 * hidden_dim,
+                out_channels=2 * hidden_dim,
+                kernel_size=4,
+                stride=2,
+                padding=1,
+            ),
+            nn.BatchNorm2d(2 * hidden_dim),
+            nn.ReLU(),
+            nn.ConvTranspose2d(
+                in_channels=2 * hidden_dim,
+                out_channels=hidden_dim,
+                kernel_size=4,
+                stride=2,
+                padding=1,
+            ),
+            nn.BatchNorm2d(hidden_dim),
+            nn.ReLU(),
+            nn.ConvTranspose2d(
+                in_channels=hidden_dim,
+                out_channels=num_channels,
+                kernel_size=4,
+                stride=2,
+                padding=1,
+            ),
+            nn.Tanh(),
+        )
+
 
 
 ########################
@@ -17,4 +78,485 @@
 ########################
 # Other Modifications
 ########################
+# _codes/GAN/dataset.py -> ../codes/GAN/dataset.py
+# 9 -
+# 18 -             transform=transforms.Compose([
+# 18 ?                                          -
+# 17 +             transform=transforms.Compose(
+# 18 +                 [
+# 19 -                 transforms.Resize(32),
+# 19 +                     transforms.Resize(32),
+# 19 ? ++++
+# 20 -                 transforms.ToTensor(),
+# 20 +                     transforms.ToTensor(),
+# 20 ? ++++
+# 21 -                 transforms.Normalize((0.5,), (0.5,))
+# 21 +                     transforms.Normalize((0.5,), (0.5,)),
+# 21 ? ++++                                                    +
+# 22 +                 ]
+# 22 -             ])
+# 22 ?             -
+# 23 +             ),
+# 23 ?              +
+# 29 -             transform=transforms.Compose([
+# 29 ?                                          -
+# 30 +             transform=transforms.Compose(
+# 31 +                 [
+# 30 -                 transforms.Resize(32),
+# 32 +                     transforms.Resize(32),
+# 32 ? ++++
+# 31 -                 transforms.ToTensor(),
+# 33 +                     transforms.ToTensor(),
+# 33 ? ++++
+# 32 -                 transforms.Normalize((0.5,), (0.5,))
+# 34 +                     transforms.Normalize((0.5,), (0.5,)),
+# 34 ? ++++                                                    +
+# 35 +                 ]
+# 33 -             ])
+# 33 ?             -
+# 36 +             ),
+# 36 ?              +
+# 41 -             pin_memory=True
+# 44 +             pin_memory=True,
+# 44 ?                            +
+# 49 -             pin_memory=True
+# 52 +             pin_memory=True,
+# 52 ?                            +
+# _codes/GAN/main.py -> ../codes/GAN/main.py
+# 4 - from tensorboardX import SummaryWriter
+# 5 -
+# 7 -
+# 8 + from torchvision.utils import make_grid
+# 9 + from torchvision.utils import save_image
+# 10 +
+# 11 +
+# 12 + def parser_data():
+# 11 - import argparse
+# 13 +     import argparse
+# 13 ? ++++
+# 14 +
+# 15 +     parser = argparse.ArgumentParser()
+# 16 +     parser.add_argument("--do_train", action="store_true")
+# 17 +     parser.add_argument("--no_cuda", action="store_true")
+# 18 +     parser.add_argument("--latent_dim", default=16, type=int)
+# 19 +     parser.add_argument("--generator_hidden_dim", default=16, type=int)
+# 20 +     parser.add_argument("--discriminator_hidden_dim", default=16, type=int)
+# 21 +     parser.add_argument("--batch_size", default=64, type=int)
+# 22 +     parser.add_argument("--num_training_steps", default=5000, type=int)
+# 23 +     parser.add_argument("--logging_steps", type=int, default=10)
+# 24 +     parser.add_argument("--saving_steps", type=int, default=1000)
+# 25 +     parser.add_argument("--learning_rate", default=0.0002, type=float)
+# 26 +     parser.add_argument(
+# 27 +         "--beta1", type=float, default=0.5, help="beta1 for adam. default=0.5"
+# 28 +     )
+# 29 +     parser.add_argument(
+# 30 +         "--data_dir", default="../data", type=str, help="The path of the data directory"
+# 31 +     )
+# 32 +     parser.add_argument(
+# 33 +         "--ckpt_dir",
+# 34 +         default="results",
+# 35 +         type=str,
+# 36 +         help="The path of the checkpoint directory",
+# 37 +     )
+# 38 +     parser.add_argument("--backbone", default="CNN", choices=["CNN", "MLP"])
+# 39 +     parser.add_argument("--using_wandb", default=False, action="store_true")
+# 40 +     parser.add_argument("--seed", default=42, type=int)
+# 41 +     args = parser.parse_args()
+# 42 +     return args
+# 43 +
+# 44 +
+# 45 + def manual_seed(seed):
+# 46 +     os.environ["PL_GLOBAL_SEED"] = str(seed)
+# 47 +     torch.manual_seed(seed)
+# 48 +     if torch.cuda.is_available():
+# 49 +         torch.cuda.manual_seed_all(seed)
+# 50 +
+# 51 +
+# 52 + def get_wandb_running_name(args):
+# 53 +     latent_dim = args.latent_dim
+# 54 +     generator_hidden_dim = args.generator_hidden_dim
+# 55 +     discriminator_hidden_dim = args.discriminator_hidden_dim
+# 56 +     # * usually discriminator_hidden_dim equals discriminator_hidden_dim
+# 57 +     backbone = args.backbone
+# 58 +     seed = args.seed
+# 59 +     manual_seed(seed)
+# 60 +     if seed != 42:
+# 61 +         print(
+# 62 +             f"GAN_{backbone}_latent_dim_{latent_dim}_generator_hidden_dim_{generator_hidden_dim}_discriminator_hidden_dim_{discriminator_hidden_dim}_seed_{seed}"
+# 63 +         )
+# 64 +         wandb_run_name = f"{backbone}_{latent_dim}_{generator_hidden_dim}_{discriminator_hidden_dim}_{seed}"
+# 65 +     else:
+# 66 +         print(
+# 67 +             f"GAN_{backbone}_latent_dim_{latent_dim}_generator_hidden_dim_{generator_hidden_dim}_discriminator_hidden_dim_{discriminator_hidden_dim}"
+# 68 +         )
+# 69 +         wandb_run_name = (
+# 70 +             f"{backbone}_{latent_dim}_{generator_hidden_dim}_{discriminator_hidden_dim}"
+# 71 +         )
+# 72 +     return wandb_run_name
+# 73 +
+# 14 -     parser = argparse.ArgumentParser()
+# 15 -     parser.add_argument('--do_train', action='store_true')
+# 16 -     parser.add_argument('--no_cuda', action='store_true')
+# 17 -     parser.add_argument('--latent_dim', default=16, type=int)
+# 18 -     parser.add_argument('--generator_hidden_dim', default=16, type=int)
+# 19 -     parser.add_argument('--discriminator_hidden_dim', default=16, type=int)
+# 20 -     parser.add_argument('--batch_size', default=64, type=int)
+# 21 -     parser.add_argument('--num_training_steps', default=5000, type=int)
+# 22 -     parser.add_argument('--logging_steps', type=int, default=10)
+# 23 -     parser.add_argument('--saving_steps', type=int, default=1000)
+# 24 -     parser.add_argument('--learning_rate', default=0.0002, type=float)
+# 25 -     parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. default=0.5')
+# 26 -     parser.add_argument('--data_dir', default='../data', type=str, help='The path of the data directory')
+# 27 -     parser.add_argument('--ckpt_dir', default='results', type=str, help='The path of the checkpoint directory')
+# 28 -     parser.add_argument('--log_dir', default='./runs', type=str)
+# 29 -     args = parser.parse_args()
+# 29 ?                  ^^ ^^^^ ---
+# 76 +     args = parser_data()
+# 76 ?                  ^^ ^
+# 77 +     wandb_run_name = get_wandb_running_name(args)
+# 78 +     using_wandb = args.using_wandb
+# 79 +     if using_wandb:
+# 80 +         import wandb
+# 31 -     config = 'z-{}_batch-{}_num-train-steps-{}'.format(args.latent_dim, args.batch_size, args.num_training_steps)
+# 82 +         wandb.init(project="test", entity="eren-zhao", name=wandb_run_name)
+# 83 +         wandb.config = {
+# 84 +             "latent_dim": args.latent_dim,
+# 85 +             "generator_hidden_dim": args.generator_hidden_dim,
+# 86 +             "discriminator_hidden_dim": args.discriminator_hidden_dim,
+# 87 +             "batch_size": args.batch_size,
+# 88 +             "num_training_steps": args.num_training_steps,
+# 89 +             "learning_rate": args.learning_rate,
+# 90 +             "beta1": args.beta1,
+# 91 +             "backbone": args.backbone,
+# 92 +             "seed": args.seed,
+# 93 +         }
+# 32 -     args.ckpt_dir = os.path.join(args.ckpt_dir, config)
+# 32 ?                                                 ^^ ^^^
+# 94 +     args.ckpt_dir = os.path.join(args.ckpt_dir, wandb_run_name)
+# 94 ?                                                 ^^ ^^^^^^^^^^^
+# 33 -     args.log_dir = os.path.join(args.log_dir, config)
+# 95 +     device = torch.device(
+# 34 -     device = torch.device('cuda' if torch.cuda.is_available() and not args.no_cuda else 'cpu')
+# 34 ?     ------ - ^^^^^^^^^^^^^^    ^                                                        ^   ^^
+# 96 +         "cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu"
+# 96 ?       ^^^    ^                                                        ^   ^
+# 97 +     )
+# 37 -     netG = GAN.get_generator(1, args.latent_dim, args.generator_hidden_dim, device)
+# 38 -     netD = GAN.get_discriminator(1, args.discriminator_hidden_dim, device)
+# 39 -     tb_writer = SummaryWriter(args.log_dir)
+# 100 +     netG, netD = GAN.get_model(
+# 101 +         1, args.latent_dim, args.generator_hidden_dim, args.backbone, device
+# 102 +     )
+# 103 +     if args.do_train:
+# 104 +         optimG = optim.Adam(
+# 105 +             netG.parameters(), lr=args.learning_rate, betas=(args.beta1, 0.999)
+# 106 +         )
+# 107 +         optimD = optim.Adam(
+# 108 +             netD.parameters(), lr=args.learning_rate, betas=(args.beta1, 0.999)
+# 109 +         )
+# 110 +         trainer = Trainer(device, netG, netD, optimG, optimD, dataset, args.ckpt_dir)
+# 111 +         trainer.train(
+# 112 +             args.num_training_steps, args.logging_steps, args.saving_steps, using_wandb
+# 113 +         )
+# 41 -     if args.do_train:
+# 42 -         optimG = optim.Adam(netG.parameters(), lr=args.learning_rate, betas=(args.beta1, 0.999))
+# 43 -         optimD = optim.Adam(netD.parameters(), lr=args.learning_rate, betas=(args.beta1, 0.999))
+# 44 -         trainer = Trainer(device, netG, netD, optimG, optimD, dataset, args.ckpt_dir, tb_writer)
+# 45 -         trainer.train(args.num_training_steps, args.logging_steps, args.saving_steps)
+# 115 +         netG.eval()
+# 116 +         #! mode collapse experiment
+# 117 +         save_image(
+# 118 +             make_grid(
+# 119 +                 netG(torch.randn(size=(50, args.latent_dim, 1, 1), device=device)),
+# 120 +                 nrow=10,
+# 121 +                 normalize=True,
+# 122 +                 value_range=(-1, 1),
+# 123 +             ),
+# 124 +             os.path.join(args.ckpt_dir, "Mode Collapse Problem.png"),
+# 125 +         )
+# 126 +         for pair in range(5):
+# 127 +             #! 做线性插值实验
+# 128 +             z1 = torch.randn(size=(args.latent_dim, 1, 1), device=device)
+# 129 +             z2 = torch.randn(size=(args.latent_dim, 1, 1), device=device)
+# 130 +             experiments = [z1 + i / 10 * (z2 - z1) for i in range(10)]
+# 131 +             experiments = torch.stack(experiments)
+# 132 +             save_image(
+# 133 +                 make_grid(
+# 134 +                     netG(experiments), nrow=5, normalize=True, value_range=(-1, 1)
+# 135 +                 ),
+# 136 +                 os.path.join(args.ckpt_dir, f"interpolate_{pair}.png"),
+# 137 +             )
+# 47 -     restore_ckpt_path = os.path.join(args.ckpt_dir, str(max(int(step) for step in os.listdir(args.ckpt_dir))))
+# 139 +     steps = [each for each in os.listdir(args.ckpt_dir) if not each.endswith(".png")]
+# 140 +     restore_ckpt_path = os.path.join(
+# 141 +         args.ckpt_dir, str(max(int(step) for step in steps))
+# 142 +     )
+# 159 +             imgs = netG.forward(
+# 64 -             imgs = netG.forward(torch.randn(args.batch_size, netG.latent_dim, 1, 1, device=device))
+# 64 ?             ---- - ^^^^^^^^^^^^^                                                                  -
+# 160 +                 torch.randn(args.batch_size, netG.latent_dim, 1, 1, device=device)
+# 160 ?               ^^
+# 161 +             )
+# 72 -     fid = fid_score.calculate_fid_given_images(real_imgs, samples, args.batch_size, device)
+# 73 -     tb_writer.add_scalar('fid', fid)
+# 169 +     fid = fid_score.calculate_fid_given_images(
+# 170 +         real_imgs, samples, args.batch_size, device
+# 171 +     )
+# 172 +     if using_wandb:
+# 173 +         wandb.log({"fid": fid})
+# 74 -     print("FID score: {:.3f}".format(fid), flush=True)
+# 174 +     print("FID score: {:.3f}".format(fid), flush=True)
+# 174 ?                                                       +
+# _codes/GAN/trainer.py -> ../codes/GAN/trainer.py
+# 3 - import torch.nn.functional as F
+# 5 -
+# 6 - import matplotlib.pyplot as plt
+# 9 - import numpy as np
+# 7 +
+# 14 +
+# 18 -     def __init__(self, device, netG, netD, optimG, optimD, dataset, ckpt_dir, tb_writer):
+# 18 ?                                                                             -----------
+# 16 +     def __init__(self, device, netG, netD, optimG, optimD, dataset, ckpt_dir):
+# 26 -         self._tb_writer = tb_writer
+# 61 -
+# 64 +
+# 70 -
+# 73 +
+# 78 -
+# 83 +
+# 85 -     def train(self, num_training_updates, logging_steps, saving_steps):
+# 90 +     def train(self, num_training_updates, logging_steps, saving_steps, using_wandb):
+# 90 ?                                                                      +++++++++++++
+# 91 +         import wandb
+# 92 +
+# 89 -         for i in tqdm(range(num_training_updates), desc='Training'):
+# 89 ?                                                         ^        ^
+# 96 +         for i in tqdm(range(num_training_updates), desc="Training"):
+# 96 ?                                                         ^        ^
+# 101 +             fake_imgs = self._netG(
+# 102 +                 torch.randn(
+# 94 -             fake_imgs = self._netG(torch.randn(real_imgs.size(0), self._netG.latent_dim, 1, 1, device=self._device))
+# 94 ?             --------- - ^^^^^^^^^^^^^^^^^^^^^^^                                                                   --
+# 103 +                     real_imgs.size(0), self._netG.latent_dim, 1, 1, device=self._device
+# 103 ?               ^^^^^^
+# 95 -             errD, errG, D_x, D_G_z1, D_G_z2 = self.train_step(real_imgs, fake_imgs, criterion)
+# 104 +                 )
+# 96 -
+# 105 +             )
+# 105 ?             +
+# 106 +             errD, errG, D_x, D_G_z1, D_G_z2 = self.train_step(
+# 107 +                 real_imgs, fake_imgs, criterion
+# 108 +             )
+# 98 -                 self._tb_writer.add_scalar("discriminator_loss", errD, global_step=i)
+# 99 -                 self._tb_writer.add_scalar("generator_loss", errG, global_step=i)
+# 100 -                 self._tb_writer.add_scalar("D(x)", D_x, global_step=i)
+# 101 -                 self._tb_writer.add_scalar("D(G(z1))", D_G_z1, global_step=i)
+# 102 -                 self._tb_writer.add_scalar("D(G(z2))", D_G_z2, global_step=i)
+# 110 +                 if using_wandb:
+# 111 +                     wandb.log(
+# 112 +                         {
+# 113 +                             "discriminator_loss": errD,
+# 114 +                             "generator_loss": errG,
+# 115 +                             "D(x)": D_x,
+# 116 +                             "D(G(z1))": D_G_z1,
+# 117 +                             "D(G(z2))": D_G_z2,
+# 118 +                         },
+# 119 +                         step=i,
+# 120 +                     )
+# 108 -                 self._tb_writer.add_image('samples', imgs, global_step=i)
+# _codes/GAN/GAN.py -> ../codes/GAN/GAN.py
+# 5 +
+# 7 -     if classname.find('Conv') != -1:
+# 7 ?                       ^    ^
+# 8 +     if classname.find("Conv") != -1:
+# 8 ?                       ^    ^
+# 9 -     elif classname.find('BatchNorm') != -1:
+# 9 ?                         ^         ^
+# 10 +     elif classname.find("BatchNorm") != -1:
+# 10 ?                         ^         ^
+# 14 +
+# 13 - def get_generator(num_channels, latent_dim, hidden_dim, device):
+# 13 ?         ^ ^^^^^^^
+# 15 + def get_model(num_channels, latent_dim, hidden_dim, backbone, device):
+# 15 ?         ^^^ ^                                       ++++++++++
+# 16 +     if backbone == "CNN":
+# 14 -     model = Generator(num_channels, latent_dim, hidden_dim).to(device)
+# 14 ?     ^ ^^^
+# 17 +         generator = Generator(num_channels, latent_dim, hidden_dim).to(device)
+# 17 ?     ^^^^^^^^^^^ ^
+# 15 -     model.apply(weights_init)
+# 15 ?     ^ ^^^
+# 18 +         generator.apply(weights_init)
+# 18 ?     ^^^^^^^^^^^ ^
+# 16 -     return model
+# 17 -
+# 18 - def get_discriminator(num_channels, hidden_dim, device):
+# 19 -     model = Discriminator(num_channels, hidden_dim).to(device)
+# 19 ?       ^^^
+# 19 +         discriminator = Discriminator(num_channels, hidden_dim).to(device)
+# 19 ?     ++++++++++ ++++ ^
+# 20 +         discriminator.apply(weights_init)
+# 21 +     else:
+# 22 +         generator = Generator_MLP(num_channels, latent_dim, hidden_dim).to(device)
+# 20 -     model.apply(weights_init)
+# 20 ?     ^ ^^^
+# 23 +         generator.apply(weights_init)
+# 23 ?     ^^^^^^^^^^^ ^
+# 21 -     return model
+# 24 +         discriminator = Discriminator_MLP(num_channels, hidden_dim).to(device)
+# 25 +         discriminator.apply(weights_init)
+# 26 +     return generator, discriminator
+# 27 +
+# 75 +     # TODO END
+# 37 -         '''
+# 37 ?         ^^^
+# 78 +         """
+# 78 ?         ^^^
+# 40 -         '''
+# 40 ?         ^^^
+# 81 +         """
+# 81 ?         ^^^
+# 46 -             if os.path.exists(os.path.join(ckpt_dir, 'generator.bin')):
+# 46 ?                                                      ^             ^
+# 87 +             if os.path.exists(os.path.join(ckpt_dir, "generator.bin")):
+# 87 ?                                                      ^             ^
+# 47 -                 path = os.path.join(ckpt_dir, 'generator.bin')
+# 47 ?                                               ^             ^
+# 88 +                 path = os.path.join(ckpt_dir, "generator.bin")
+# 88 ?                                               ^             ^
+# 90 +                 path = os.path.join(
+# 91 +                     ckpt_dir,
+# 49 -                 path = os.path.join(ckpt_dir, str(max(int(name) for name in os.listdir(ckpt_dir))), 'generator.bin')
+# 49 ?                 ---- - ^^^^^^^^^^^^^^^^^^^^^^                                                      -----------------
+# 92 +                     str(max(int(name) for name in os.listdir(ckpt_dir))),
+# 92 ?                   ^
+# 93 +                     "generator.bin",
+# 94 +                 )
+# 57 -         path = os.path.join(ckpt_dir, str(global_step), 'generator.bin')
+# 57 ?                                                         ^             ^
+# 102 +         path = os.path.join(ckpt_dir, str(global_step), "generator.bin")
+# 102 ?                                                         ^             ^
+# 105 +
+# 80 -             nn.Sigmoid()
+# 126 +             nn.Sigmoid(),
+# 126 ?                         +
+# 88 -             if os.path.exists(os.path.join(ckpt_dir, 'discriminator.bin')):
+# 88 ?                                                      ^                 ^
+# 134 +             if os.path.exists(os.path.join(ckpt_dir, "discriminator.bin")):
+# 134 ?                                                      ^                 ^
+# 89 -                 path = os.path.join(ckpt_dir, 'discriminator.bin')
+# 89 ?                                               ^                 ^
+# 135 +                 path = os.path.join(ckpt_dir, "discriminator.bin")
+# 135 ?                                               ^                 ^
+# 91 -                 path = os.path.join(ckpt_dir, str(max(int(name) for name in os.listdir(ckpt_dir))), 'discriminator.bin')
+# 137 +                 path = os.path.join(
+# 138 +                     ckpt_dir,
+# 139 +                     str(max(int(name) for name in os.listdir(ckpt_dir))),
+# 140 +                     "discriminator.bin",
+# 141 +                 )
+# 99 -         path = os.path.join(ckpt_dir, str(global_step), 'discriminator.bin')
+# 99 ?                                                         ^                 ^
+# 149 +         path = os.path.join(ckpt_dir, str(global_step), "discriminator.bin")
+# 149 ?                                                         ^                 ^
+# 152 +
+# 153 +
+# 154 + #! Warning
+# 155 + class Generator_MLP(nn.Module):
+# 156 +     def __init__(self, num_channels, latent_dim, hidden_dim):
+# 157 +         super(Generator_MLP, self).__init__()
+# 158 +         self.num_channels = num_channels
+# 159 +         self.hidden_dim = hidden_dim
+# 160 +         self.latent_dim = latent_dim
+# 161 +         self.decoder = nn.Sequential(
+# 162 +             nn.Linear(latent_dim, 4 * hidden_dim),
+# 163 +             nn.BatchNorm1d(4 * hidden_dim),
+# 164 +             nn.ReLU(),
+# 165 +             nn.Linear(4 * hidden_dim, 2 * hidden_dim),
+# 166 +             nn.BatchNorm1d(2 * hidden_dim),
+# 167 +             nn.ReLU(),
+# 168 +             nn.Linear(2 * hidden_dim, hidden_dim),
+# 169 +             nn.BatchNorm1d(hidden_dim),
+# 170 +             nn.ReLU(),
+# 171 +             nn.Linear(hidden_dim, num_channels * 32 * 32),
+# 172 +             nn.Tanh(),
+# 173 +         )
+# 174 +
+# 175 +     def forward(self, z: torch.Tensor):
+# 176 +         """
+# 177 +         *   Arguments:
+# 178 +             *   z (torch.FloatTensor): [batch_size, latent_dim, 1, 1]
+# 179 +         """
+# 180 +         z = z.to(next(self.parameters()).device)
+# 181 +         format_z = z.reshape((z.shape[0], -1))
+# 182 +         decoded = self.decoder(format_z)
+# 183 +         reshape_decoded = decoded.reshape((z.shape[0], self.num_channels, 32, 32))
+# 184 +         return reshape_decoded
+# 185 +
+# 186 +     def restore(self, ckpt_dir):
+# 187 +         try:
+# 188 +             if os.path.exists(os.path.join(ckpt_dir, "generator.bin")):
+# 189 +                 path = os.path.join(ckpt_dir, "generator.bin")
+# 190 +             else:
+# 191 +                 path = os.path.join(
+# 192 +                     ckpt_dir,
+# 193 +                     str(max(int(name) for name in os.listdir(ckpt_dir))),
+# 194 +                     "generator.bin",
+# 195 +                 )
+# 196 +         except:
+# 197 +             return None
+# 198 +         self.load_state_dict(torch.load(path))
+# 199 +         return os.path.split(path)[0]
+# 200 +
+# 201 +     def save(self, ckpt_dir, global_step):
+# 202 +         os.makedirs(os.path.join(ckpt_dir, str(global_step)), exist_ok=True)
+# 203 +         path = os.path.join(ckpt_dir, str(global_step), "generator.bin")
+# 204 +         torch.save(self.state_dict(), path)
+# 205 +         return os.path.split(path)[0]
+# 206 +
+# 207 +
+# 208 + #! Warning
+# 209 + class Discriminator_MLP(nn.Module):
+# 210 +     def __init__(self, num_channels, hidden_dim):
+# 211 +         super(Discriminator_MLP, self).__init__()
+# 212 +         self.num_channels = num_channels
+# 213 +         self.hidden_dim = hidden_dim
+# 214 +         self.clf = nn.Sequential(
+# 215 +             nn.Linear(num_channels * 32 * 32, hidden_dim),
+# 216 +             nn.LeakyReLU(0.2, inplace=True),
+# 217 +             nn.Linear(hidden_dim, 2 * hidden_dim),
+# 218 +             nn.Dropout(0.2),
+# 219 +             nn.LeakyReLU(0.2, inplace=True),
+# 220 +             nn.Linear(2 * hidden_dim, 4 * hidden_dim),
+# 221 +             nn.Dropout(0.2),
+# 222 +             nn.LeakyReLU(0.2, inplace=True),
+# 223 +             nn.Linear(4 * hidden_dim, 1),
+# 224 +             nn.Sigmoid(),
+# 225 +         )
+# 226 +
+# 227 +     def forward(self, x: torch.Tensor):
+# 228 +         format_x = x.reshape((x.shape[0], -1))
+# 229 +         out = self.clf(format_x)
+# 230 +         reshaped_out = out.reshape((-1,))
+# 231 +         return reshaped_out
+# 232 +
+# 233 +     def restore(self, ckpt_dir):
+# 234 +         try:
+# 235 +             if os.path.exists(os.path.join(ckpt_dir, "discriminator.bin")):
+# 236 +                 path = os.path.join(ckpt_dir, "discriminator.bin")
+# 237 +             else:
+# 238 +                 path = os.path.join(
+# 239 +                     ckpt_dir,
+# 240 +                     str(max(int(name) for name in os.listdir(ckpt_dir))),
+# 241 +                     "discriminator.bin",
+# 242 +                 )
+# 243 +         except:
+# 244 +             return None
+# 245 +         self.load_state_dict(torch.load(path))
+# 246 +         return os.path.split(path)[0]
+# 247 +
+# 248 +     def save(self, ckpt_dir, global_step):
+# 249 +         os.makedirs(os.path.join(ckpt_dir, str(global_step)), exist_ok=True)
+# 250 +         path = os.path.join(ckpt_dir, str(global_step), "discriminator.bin")
+# 251 +         torch.save(self.state_dict(), path)
+# 252 +         return os.path.split(path)[0]
 
