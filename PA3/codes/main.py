@@ -216,7 +216,7 @@ def evaluate(gen_ids, truth_ids, cpu_count=20):
     for ngrams in [4]:
         print("computing BLEU-%d"%ngrams)
         bleu_irl_fw, bleu_irl_bw = [], []
-        weights = np.ones(ngrams) / ngrams
+        weights = (0.25, 0.25, 0.25, 0.25)
 
         tasks = ((truth_ids, gen_ids[i], weights) for i in range(sample_hyps_num))
         pool = Pool(cpu_count)
