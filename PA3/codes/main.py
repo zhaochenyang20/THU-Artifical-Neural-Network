@@ -210,13 +210,11 @@ def fast_evaluate(model, data, batch_size, PAD_ID, device):
 def evaluate(gen_ids, truth_ids, cpu_count=20):
     from multiprocessing import Pool
 
-    # reference: https://superfastpython.com/multiprocessing-pool-python/
-
     assert len(gen_ids) == len(truth_ids)
     sample_hyps_num = len(gen_ids)
     res = {}
     for ngrams in [4]:
-        print("computing BLEU-%d" % ngrams)
+        print("computing BLEU-%d"%ngrams)
         bleu_irl_fw, bleu_irl_bw = [], []
         weights = np.ones(ngrams) / ngrams
 
@@ -238,20 +236,17 @@ def evaluate(gen_ids, truth_ids, cpu_count=20):
         pool.close()
         pool.join()
 
-        fw_bleu = 1.0 * sum(bleu_irl_fw) / len(bleu_irl_fw)
-        bw_bleu = 1.0 * sum(bleu_irl_bw) / len(bleu_irl_bw)
+        fw_bleu = (1.0 * sum(bleu_irl_fw) / len(bleu_irl_fw))
+        bw_bleu = (1.0 * sum(bleu_irl_bw) / len(bleu_irl_bw))
         if fw_bleu + bw_bleu > 0:
             fw_bw_bleu = 2.0 * bw_bleu * fw_bleu / (fw_bleu + bw_bleu)
         else:
             fw_bw_bleu = 0
 
-        res.update(
-            {
-                "fw-bleu-%d" % ngrams: fw_bleu,
-                "bw-bleu-%d" % ngrams: bw_bleu,
-                "fw-bw-bleu-%d" % ngrams: fw_bw_bleu,
-            }
-        )
+        res.update({"fw-bleu-%d"%ngrams : fw_bleu, \
+            "bw-bleu-%d"%ngrams : bw_bleu, \
+            "fw-bw-bleu-%d"%ngrams : fw_bw_bleu \
+        })
     return res
 
 
